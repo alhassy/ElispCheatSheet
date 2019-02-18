@@ -15,14 +15,14 @@ This reference sheet is built around the system
 
 # Table of Contents
 
-1.  [Functions](#org8c4011d)
-2.  [Conditionals](#org1f16a4f)
-3.  [List Manipulation](#org1b679cb)
-4.  [Variables](#org6aec526)
-5.  [Block of Code](#org354a52e)
-6.  [Reads](#org2bd1315)
-7.  [Loops](#orgc89b442)
-8.  [Hooks](#org7fea3b2)
+1.  [Functions](#org93777fc)
+2.  [Variables](#orgc310d6c)
+3.  [Block of Code](#org994feb6)
+4.  [List Manipulation](#orga2352b0)
+5.  [Conditionals](#orgb2ce15b)
+6.  [Reads](#org23e3f6d)
+7.  [Loops](#org215ff9d)
+8.  [Hooks](#org5fdb874)
 
 
 
@@ -43,7 +43,7 @@ This reference sheet is built around the system
 -   To find out more about a key press, execute `C-h k` then the key press.
 
 
-<a id="org8c4011d"></a>
+<a id="org93777fc"></a>
 
 # Functions
 
@@ -56,10 +56,14 @@ This reference sheet is built around the system
 
 -   Function definition:
     
+        ;; “de”fine “fun”ctions
         (defun my-fun (arg₀ arg₁ … argₖ)         ;; header, signature
           "This functions performs task …"       ;; documentation, optional
           …sequence of instructions to perform…  ;; body
         )
+    
+    -   The return value of the function is the result of the last expression executed.
+    -   The documentation string may indicate the return type, among other things.
 
 -   Anonymous functions: `(lambda (arg₀ … argₖ) bodyHere)`.
     
@@ -86,42 +90,33 @@ This reference sheet is built around the system
         The benefit is that the function can be executed using `M-x`,
         and is then referred to as an interactive function.
 
-
-<a id="org1f16a4f"></a>
-
-# Conditionals
-
--   Booleans: `nil`, the empty list `()`, is considered *false*, all else
-    is *true*. 
-    -   Note: `nil ≈ () ≈ '() ≈ 'nil`.
--   `(if ⟨condition⟩ ⟨thenClause⟩ ⟨optionalElseClause⟩)`
-    -   Note: `(if x y) ≈ (if x y nil).`
+\newpage
 
 
-<a id="org1b679cb"></a>
-
-# List Manipulation
-
--   Produce a syntactic, un-evaluated list, we use the single quote:
-    `'(1 2 3)`.
-
--   Construction: `(cons 'x₀ '(x₁ … xₖ)) → (x₀ x₁ … xₖ)`.
--   Head, or *contents of the address part of the register*:
-    `(car '(x₀ x₁ … xₖ)) → x₀`.
--   Tail, or *contents of the decrement part of the register*:
-    `(cdr '(x₀ x₁ … xₖ)) → (x₁ … xₖ)`.
--   Deletion: `(delete e xs)` yields `xs` with all instance of `e` removed.
-    -   E.g., `(delete 1 '(2 1 3 4 1)) → '(2 3 4)`.
-
-E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)`.
-
-
-<a id="org6aec526"></a>
+<a id="orgc310d6c"></a>
 
 # Variables
 
 -   Global Variables: `(setq name value)`; e.g., `(setq my-list '(1 2 3))`.
+    -   This creates brand-new variables; generally: `(setq name₀ value₀ ⋯ nameₖ valueₖ)`.
 -   Local Scope: `(let ((name₀ val₀) … (nameₖ valₖ)) …use nameᵢ here… )`.
+
+-   Elisp is dynamically scoped: The caller's stack is accessible by default!
+    
+        (defun woah () 
+          "If any caller has a local ‘work’, they're in for a nasty bug
+           from me!"
+          (setq work 666))
+        
+        (defun add-one (x)
+          "Just adding one to input, innocently calling library method ‘woah’."
+          (let ((work (+ 1 x)))
+            (woah) ;; May change ‘work’!
+            work
+          )
+        )
+        
+        ;; (add-one 2) ⇒ 666
 
 -   Quotes: `'x` refers to the *name* rather than the *value* of `x`.
     -   This is superficially similar to pointers:
@@ -141,7 +136,7 @@ E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" n
 Note: `'x ≈ (quote x)`.
 
 
-<a id="org354a52e"></a>
+<a id="org994feb6"></a>
 
 # Block of Code
 
@@ -150,12 +145,102 @@ Use the `progn` function to evaluate multiple statements. E.g.,
     (progn
       (message "hello")
       (setq x  (if (< 2 3) 'two-less-than-3))
-      (sleep-for 1)
+      (sleep-for 0 500)
       (message (format "%s" x))
+      (sleep-for 0 500)
+      23    ;; Explicit return value
     )
 
+This' like curly-braces in C or Java. The difference is that the last expression is considered
+the ‘return value’ of the block.
 
-<a id="org2bd1315"></a>
+Herein, a ‘block’ is a number of sequential expressions which needn't be wrapped with a `progn` form.
+
+-   Lazy conjunction and disjunction:
+    
+    -   Perform multiple statements but stop when any of them fails, returns `nil`: `(and s₀ s₁ … sₖ)`.
+        -   Maybe monad!
+    -   Perform multiple statements until one of them succeeds, returns non-`nil`: `(or s₀ s₁ … sₖ)`.
+    
+    We can coerce a statement `sᵢ` to returning non-`nil` as so: (`progn sᵢ t)`.
+    Likewise, coerce failure by `(progn sᵢ nil)`.
+
+-   Jumps, Control-flow transfer: Perform multiple statements and decide when and where you would like to stop.
+    
+    -   `(catch 'my-jump bodyBlock)` where the body may contain `(throw 'my-jump returnValue)`;
+    
+    the value of the catch/throw is then `returnValue`.
+    
+    -   Useful for when the `bodyBlock` is, say, a loop.
+        Then we may have multiple `catch`'s with different labels according to the nesting of loops.
+        -   Possibly informatively named throw symbol is `'break`.
+    -   Using name `'continue` for the throw symbol and having such a catch/throw as *the body of a loop*
+        gives the impression of continue-statements from Java.
+    -   Using name `'return` for the throw symbol and having such a catch/throw as the body of a function
+        definition gives the impression of, possibly multiple, return-statements from Java
+        &#x2013;as well as ‘early exits’.
+    -   Simple law: `(catch 'it s₀ s₁ … sₖ (throw 'it r) sₖ₊₁ ⋯ sₖ₊ₙ) ≈ (progn s₀ s₁ ⋯ sₖ r)`.
+        -   Provided the `sᵢ` are simple function application forms.
+
+
+<a id="orga2352b0"></a>
+
+# List Manipulation
+
+-   Produce a syntactic, un-evaluated list, we use the single quote:
+    `'(1 2 3)`.
+
+-   Construction: `(cons 'x₀ '(x₁ … xₖ)) → (x₀ x₁ … xₖ)`.
+-   Head, or *contents of the address part of the register*:
+    `(car '(x₀ x₁ … xₖ)) → x₀`.
+-   Tail, or *contents of the decrement part of the register*:
+    `(cdr '(x₀ x₁ … xₖ)) → (x₁ … xₖ)`.
+-   Deletion: `(delete e xs)` yields `xs` with all instance of `e` removed.
+    -   E.g., `(delete 1 '(2 1 3 4 1)) → '(2 3 4)`.
+
+E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)`.
+
+
+<a id="orgb2ce15b"></a>
+
+# Conditionals
+
+-   Booleans: `nil`, the empty list `()`, is considered *false*, all else
+    is *true*. 
+    -   Note: `nil ≈ () ≈ '() ≈ 'nil`.
+    -   (Deep structural) equality: `(equal x y)`.
+    -   Comparisons: As expected; e.g., `(<= x y)` denotes *x ≤ y*.
+
+-   `(if condition thenExpr optionalElseBlock)`
+    -   Note: `(if x y) ≈ (if x y nil)`; better: `(when c thenBlock) ≈ (if c (progn thenBlock))`.
+    -   Note the else-clause is a ‘block’: Everything after the then-clause is considered to be part of it.
+
+-   Avoid nested if-then-else clauses by using a `cond` statement &#x2013;a generalisation of switch statements.  
+    
+        (cond
+          (test₀
+            actionBlock₀)
+          (test₁
+            actionBlock₁)
+          …
+          (t                       ;; optional
+            defaultActionBlock))
+    
+    Sequentially evaluate the predicates `testᵢ` and perform only the action of the first true test;
+    yield `nil` when no tests are true.
+
+-   Make choices by comparing against *only* numbers or symbols &#x2013;e.g., not strings!&#x2013; with less clutter by using `case`:
+    
+        (case 'boberto
+          ('bob 3)
+          ('rob 9)
+          ('bobert 9001)
+          (otherwise "You're a stranger!"))
+    
+    With case you can use either `t` or `otherwise` for the default case, but it must come last.
+
+
+<a id="org23e3f6d"></a>
 
 # Reads
 
@@ -163,10 +248,8 @@ Use the `progn` function to evaluate multiple statements. E.g.,
 -   [An Introduction to Programming in Emacs Lisp](https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top)
 -   [GNU Emacs Lisp Reference Manual](https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top)
 
-\newpage
 
-
-<a id="orgc89b442"></a>
+<a id="org215ff9d"></a>
 
 # Loops
 
@@ -203,10 +286,71 @@ Like `dotimes`, the final item is the expression value at the end of the loop.
 
 `(describe-symbol 'sleep-for)` ;-)
 
-\newpage
+Loop essentials:
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
-<a id="org7fea3b2"></a>
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">C</td>
+<td class="org-left">Elisp</td>
+</tr>
+
+
+<tr>
+<td class="org-left">`x += y`</td>
+<td class="org-left">`(incf x y)`</td>
+</tr>
+
+
+<tr>
+<td class="org-left">`x--`</td>
+<td class="org-left">`(decf x)`</td>
+</tr>
+
+
+<tr>
+<td class="org-left">`x++`</td>
+<td class="org-left">`(incf x)`</td>
+</tr>
+</tbody>
+</table>
+
+    (defun my/cool-function (N D)
+      "Sum the numbers 0..N that are not divisible by D"
+      (catch 'return
+        (when (< N 0) (throw 'return 0)) ;; early exit
+        (let ((counter 0) (sum 0))
+          (catch 'break
+            (while 'true
+              (catch 'continue
+                (incf counter)
+                (cond
+                  ((equal counter N)     (throw 'break sum))
+                  ((zerop (% counter D)) (throw 'continue nil))
+        	      ('otherwise            (incf sum counter))
+                  )))))))
+    
+    (my/cool-function  100 3)  ;; ⇒ 3267
+    (my/cool-function  100 5)  ;; ⇒ 4000
+    (my/cool-function -100 7)  ;; ⇒ 0
+
+Note that we could have had a final redundant `throw 'return`:
+Redundant since the final expression in a block is its return value.
+
+The special `loop` constructs provide immensely many options to form
+nearly any kind of imperative loop. E.g., Python-style ‘downfrom’ for-loops
+and Java do-while loops. I personally prefer functional programming, so wont
+look into this much.
+
+
+<a id="org5fdb874"></a>
 
 # Hooks
 
@@ -226,6 +370,4 @@ is initialised with org-mode.
     ;; Now execute: (revert-buffer) to observe “go” being executed.
     ;; Later remove this silly function from the list:
     (remove-hook 'org-mode-hook 'go)
-
-\vfill
 

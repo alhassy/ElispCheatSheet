@@ -13,7 +13,7 @@
 #+DESCRIPTION: This document is written by Musa Al-hassy for his learning in the Winter of 2019.
 #+STARTUP: hideblocks
 #+STARTUP: overview
-#+TODO: BEGIN-IGNORE(b) END-IGNORE(e) } | DONE(d)
+#+TODO: | spacing
 #+OPTIONS: d:nil
 #+INCLUDE: CheatSheet/CheatSheetSetup.org
 
@@ -48,11 +48,15 @@
 
 + Function definition:
   #+BEGIN_SRC elisp
+  ;; “de”fine “fun”ctions
   (defun my-fun (arg₀ arg₁ … argₖ)         ;; header, signature
     "This functions performs task …"       ;; documentation, optional
     …sequence of instructions to perform…  ;; body
   )
   #+END_SRC
+
+  - The return value of the function is the result of the last expression executed. 
+  - The documentation string may indicate the return type, among other things.  
 
 + Anonymous functions: ~(lambda (arg₀ … argₖ) bodyHere)~.
   #+BEGIN_SRC elisp
@@ -79,37 +83,54 @@
     The benefit is that the function can be executed using ~M-x~,
     and is then referred to as an interactive function.
 
-* Conditionals
-
-+ Booleans: ~nil~, the empty list ~()~, is considered /false/, all else
-  is /true/. 
-  - Note: ~nil ≈ () ≈ '() ≈ 'nil~.
-+ ~(if ⟨condition⟩ ⟨thenClause⟩ ⟨optionalElseClause⟩)~
-  - Note: ~(if x y) ≈ (if x y nil).~
-
-* List Manipulation
-
-+ Produce a syntactic, un-evaluated list, we use the single quote:
-  ~'(1 2 3)~.
-
-+ Construction: ~(cons 'x₀ '(x₁ … xₖ)) → (x₀ x₁ … xₖ)~.
-+ Head, or /contents of the address part of the register/:
-   ~(car '(x₀ x₁ … xₖ)) → x₀~.
-+ Tail, or /contents of the decrement part of the register/:
-   ~(cdr '(x₀ x₁ … xₖ)) → (x₁ … xₖ)~.
-+ Deletion: ~(delete e xs)~ yields ~xs~ with all instance of ~e~ removed.
-  - E.g., ~(delete 1 '(2 1 3 4 1)) → '(2 3 4)~.
-
-E.g., ~(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)~.
-
+* spacing newpage                                                    :ignore:
+\newpage
 * Variables
-+ Global Variables: ~(setq name value)~; e.g., ~(setq my-list '(1 2 3))~.
-+ Local Scope: ~(let ((name₀ val₀) … (nameₖ valₖ)) …use nameᵢ here… )~.
++ Global Variables, Create & Update: ~(setq name value)~.
+  - Generally: ~(setq name₀ value₀ ⋯ nameₖ valueₖ)~.
+  
+  Use ~devfar~ for /constant/ global variables, which
+  permit a documentation string.
+  E.g., ~(defvar my-x 14 "my cool thing")~.
 
-:TryItOut:
-(describe-symbol 'show-trailing-whitespace)
-(setq-default show-trailing-whitespace t)
-:End:
+  :TryItOut:
+(defvar my-x 14 "my cool thing")
+
+my-x ;; ⇒ 14
+
+(defvar my-x 16 "my cool thing")
+
+my-x ;; ⇒ 14 still
+
+(describe-symbol 'my-x)
+  :End:
+
++ Local Scope: ~(let ((name₀ val₀) … (nameₖ valₖ)) bodyBlock)~.
+  - ~let*~ permits later bindings to refer to earlier ones.
+
++ Elisp is dynamically scoped: The caller's stack is accessible by default!
+  #+BEGIN_SRC emacs-lisp
+(defun woah () 
+  "If any caller has a local ‘work’, they're in for a nasty bug
+   from me!"
+  (setq work 666))
+
+(defun add-one (x)
+  "Just adding one to input, innocently calling library method ‘woah’."
+  (let ((work (+ 1 x)))
+    (woah) ;; May change ‘work’!
+    work
+  )
+)
+
+;; (add-one 2) ⇒ 666
+#+END_SRC
+
+Useful for loops, among other things:
+| _C_      | _Elisp_      |
+| ~x += y~ | ~(incf x y)~ |
+| ~x--~    | ~(decf x)~   |
+| ~x++~    | ~(incf x)~   |
 
 + Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
   - This is superficially similar to pointers:
@@ -129,6 +150,8 @@ E.g., ~(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" n
 
 Note: ~'x ≈ (quote x)~.
 
+* spacing newpage                                                    :ignore:
+\newpage
 * Block of Code
 
 Use the ~progn~ function to evaluate multiple statements. E.g.,
@@ -136,18 +159,129 @@ Use the ~progn~ function to evaluate multiple statements. E.g.,
 (progn
   (message "hello")
   (setq x  (if (< 2 3) 'two-less-than-3))
-  (sleep-for 1)
+  (sleep-for 0 500)
   (message (format "%s" x))
+  (sleep-for 0 500)
+  23    ;; Explicit return value
 )
 #+END_SRC
+This' like curly-braces in C or Java. The difference is that the last expression is considered
+the ‘return value’ of the block.
+
+Herein, a ‘block’ is a number of sequential expressions which needn't be wrapped with a ~progn~ form.
+
++ Lazy conjunction and disjunction:
+  - Perform multiple statements but stop when any of them fails, returns ~nil~: ~(and s₀ s₁ … sₖ)~.
+    * Maybe monad!
+  - Perform multiple statements until one of them succeeds, returns non-~nil~: ~(or s₀ s₁ … sₖ)~.
+  
+  We can coerce a statement ~sᵢ~ to returning non-~nil~ as so: (~progn sᵢ t)~.
+  Likewise, coerce failure by ~(progn sᵢ nil)~.
+
+:TryItOut:
+(and 
+  (message "hello")
+  (progn (sleep-for 0 500) t)
+  (message "world")
+  (progn (sleep-for 0 500) t)  
+  nil
+  (message "bye")
+)
+
+(or
+  (message "hello")
+  (progn (sleep-for 0 500) t)
+  (message "world")
+  (progn (sleep-for 0 500) t)  
+  nil
+  (message "bye")
+)
+
+(catch 'failure
+  (cond (message "hello")
+    (progn (sleep-for 0 500) t)
+    (message "world")
+    (progn (sleep-for 0 500) t)  
+    nil
+    (throw 'failure 99)
+    (message "bye")  
+  ) 
+)
+:End:
+
++ Jumps, Control-flow transfer: Perform multiple statements and decide when and where you would like to stop.
+  - ~(catch 'my-jump bodyBlock)~ where the body may contain ~(throw 'my-jump returnValue)~;
+  the value of the catch/throw is then ~returnValue~.
+  - Useful for when the ~bodyBlock~ is, say, a loop.
+    Then we may have multiple ~catch~'s with different labels according to the nesting of loops.
+    * Possibly informatively named throw symbol is ~'break~.
+  - Using name ~'continue~ for the throw symbol and having such a catch/throw as /the body of a loop/
+    gives the impression of continue-statements from Java.
+  - Using name ~'return~ for the throw symbol and having such a catch/throw as the body of a function
+    definition gives the impression of, possibly multiple, return-statements from Java
+    --as well as ‘early exits’.
+  - Simple law: ~(catch 'it s₀ s₁ … sₖ (throw 'it r) sₖ₊₁ ⋯ sₖ₊ₙ) ≈ (progn s₀ s₁ ⋯ sₖ r)~.
+    * Provided the ~sᵢ~ are simple function application forms.
+
+* List Manipulation
+
++ Produce a syntactic, un-evaluated list, we use the single quote:
+  ~'(1 2 3)~.
+
++ Construction: ~(cons 'x₀ '(x₁ … xₖ)) → (x₀ x₁ … xₖ)~.
++ Head, or /contents of the address part of the register/:
+   ~(car '(x₀ x₁ … xₖ)) → x₀~.
++ Tail, or /contents of the decrement part of the register/:
+   ~(cdr '(x₀ x₁ … xₖ)) → (x₁ … xₖ)~.
++ Deletion: ~(delete e xs)~ yields ~xs~ with all instance of ~e~ removed.
+  - E.g., ~(delete 1 '(2 1 3 4 1)) → '(2 3 4)~.
+
+E.g., ~(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)~.
+
+* Conditionals
+
++ Booleans: ~nil~, the empty list ~()~, is considered /false/, all else
+  is /true/. 
+  - Note: ~nil ≈ () ≈ '() ≈ 'nil~.
+  - (Deep structural) equality: ~(equal x y)~.
+  - Comparisons: As expected; e.g., ~(<= x y)~ denotes /x ≤ y/.
+
++ ~(if condition thenExpr optionalElseBlock)~
+  - Note: ~(if x y) ≈ (if x y nil)~; better: ~(when c thenBlock) ≈ (if c (progn thenBlock))~.
+  - Note the else-clause is a ‘block’: Everything after the then-clause is considered to be part of it.  
+
++ Avoid nested if-then-else clauses by using a ~cond~ statement --a generalisation of switch statements.  
+   #+BEGIN_SRC emacs-lisp
+(cond
+  (test₀
+    actionBlock₀)
+  (test₁
+    actionBlock₁)
+  …
+  (t                       ;; optional
+    defaultActionBlock))
+#+END_SRC
+   Sequentially evaluate the predicates ~testᵢ~ and perform only the action of the first true test;
+   yield ~nil~ when no tests are true.
+
++ Make choices by comparing against /only/ numbers or symbols --e.g., not strings!-- with less clutter by using ~case~:
+   #+BEGIN_SRC emacs-lisp
+(case 'boberto
+  ('bob 3)
+  ('rob 9)
+  ('bobert 9001)
+  (otherwise "You're a stranger!"))
+#+END_SRC
+   With case you can use either ~t~ or ~otherwise~ for the default case, but it must come last.
+* spacing vfill                                                     :ignore:
+\vfill
+
 * Reads
 
 + [[http://sachachua.com/blog/wp-content/uploads/2013/05/How-to-Learn-Emacs-v2-Large.png][How to Learn Emacs: A Hand-drawn One-pager for Beginners / A visual tutorial]]
 + [[https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top][An Introduction to Programming in Emacs Lisp]]  
 + [[https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top][GNU Emacs Lisp Reference Manual]]
 
-* newpage :ignore:
-\newpage
 * Loops
 
 Sum the first ~10~ numbers:
@@ -186,10 +320,45 @@ Like ~dotimes~, the final item is the expression value at the end of the loop.
 
 ~(describe-symbol 'sleep-for)~ ;-)
 
-* newpage :ignore:
 \newpage
+*Example of Above Constructs*
+#+BEGIN_SRC emacs-lisp
+(defun my/cool-function (N D)
+  "Sum the numbers 0..N that are not divisible by D"
+  (catch 'return
+    (when (< N 0) (throw 'return 0)) ;; early exit
+    (let ((counter 0) (sum 0))
+      (catch 'break
+        (while 'true
+          (catch 'continue
+            (incf counter)
+            (cond
+              ((equal counter N)     (throw 'break sum))
+              ((zerop (% counter D)) (throw 'continue nil))
+    	      ('otherwise            (incf sum counter))
+              )))))))
+
+(my/cool-function  100 3)  ;; ⇒ 3267
+(my/cool-function  100 5)  ;; ⇒ 4000
+(my/cool-function -100 7)  ;; ⇒ 0
+#+END_SRC
+
+Note that we could have had a final redundant ~throw 'return~:
+Redundant since the final expression in a block is its return value.
+
+\room
+
+The special ~loop~ constructs provide immensely many options to form
+nearly any kind of imperative loop. E.g., Python-style ‘downfrom’ for-loops
+and Java do-while loops. I personally prefer functional programming, so wont
+look into this much.
+
 * Hooks
-Hooks are lists of functions that are called from Emacs Lisp in order to modify the behaviour of something. For example, different modes have their own hooks so that you can add functions that will run when that mode is initialised.
++ We can ‘hook’ methods to run at particular events.
++ Hooks are lists of functions that are, for example, run when a mode is initialised.
+
+# Hooks are lists of functions that are called from Emacs Lisp in order to modify the behaviour of something. 
+# For example, different modes have their own hooks so that you can add functions that will run when that mode is initialised.
 
 E.g.,
 let's add the ~go~ function to the list of functions when a buffer 
@@ -200,15 +369,18 @@ is initialised with org-mode.
 (defun go () (message-box "It worked!"))
 
   (add-hook 'org-mode-hook 'go)
+≈ (add-hook 'org-mode-hook '(lambda () (message-box "It worked!")))
 ≈ (add-to-list 'org-mode-hook 'go)
 
 ;; Now execute: (revert-buffer) to observe “go” being executed.
 ;; Later remove this silly function from the list:
 (remove-hook 'org-mode-hook 'go)
 #+END_SRC
-* newpage :ignore:
-# \newpage
-\vfill
+
++ The ~'after-init-hook~ event will run functions after the rest of the init-file has finished loading.
+
+* COMMENT Useful features
++ M-; :: Toggle (un)commenting a region.
 
 * COMMENT Making README.md
 
