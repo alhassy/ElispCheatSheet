@@ -1,0 +1,254 @@
+# f7 preview changes
+# f8 commit each change
+# f9 push changes
+* Header                                                      :do:not:ignore:
+#+TITLE: Elisp Reference Sheet
+# SUBTITLE: Cheat Sheet Template
+# DATE: << Winter 2019 >>
+# When we don't provide a date, one is provided for us.
+#+MACRO: URL https://github.com/alhassy/ElispCheatSheet
+#+MACRO: ShowURL @@latex:{\tiny\hspace{6em}\url{ {{{URL}}} } }@@
+#+AUTHOR: [[http://www.cas.mcmaster.ca/~alhassm/][Musa Al-hassy]] {{{ShowURL}}}
+#+EMAIL: alhassy@gmail.com
+#+DESCRIPTION: This document is written by Musa Al-hassy for his learning in the Winter of 2019.
+#+STARTUP: hideblocks
+#+STARTUP: overview
+#+TODO: BEGIN-IGNORE(b) END-IGNORE(e) } | DONE(d)
+#+OPTIONS: d:nil
+#+INCLUDE: CheatSheet/CheatSheetSetup.org
+
+* LaTeX Setup                                       :ignore:Needs_to_be_here:
+# Can be obtained from: https://github.com/alhassy/MyUnicodeSymbols
+#
+#+LATEX_HEADER: \usepackage{MyUnicodeSymbols}
+
+* Intro :ignore:
+/Everything is a list!/
+
+- To find out more about ~name~ execute ~(describe-symbol 'name)~!
+  * After the closing parens invoke ~C-x C-e~ to evaluate.
+- To find out more about a key press, execute ~C-h k~ then the key press.
+:Examples:
+(describe-symbol 'just-one-space)
+(describe-symbol 'eldoc-mode)
+(describe-symbol 'describe-symbol)
+:End:
+
+* Functions
+
++ Function invocation: ~(f x₀ x₁ … xₙ)~. E.g., ~(+ 3 4)~ or ~(message "hello")~.
+  - After the closing parens invoke ~C-x C-e~ to execute them.
+  - Only prefix invocations means we can use ~-,+,*~ in /names/
+    since ~(f+*- a b)~ is parsed as applying function ~f+*-~ to arguments ~a, b~.
+    # Having infix notation, as in “a - b”, is what renders names “a-b”
+    # from being parsed correctly. Lisp does not make use of infix names,
+    # so this is a non-issue. Interestingly Agda allows +-* in names and infix!
+
+    E.g., ~(1+ 42) → 43~ using function /named/ ~1+~ --the ‘successor function’.
+
++ Function definition:
+  #+BEGIN_SRC elisp
+  (defun my-fun (arg₀ arg₁ … argₖ)         ;; header, signature
+    "This functions performs task …"       ;; documentation, optional
+    …sequence of instructions to perform…  ;; body
+  )
+  #+END_SRC
+
++ Anonymous functions: ~(lambda (arg₀ … argₖ) bodyHere)~.
+  #+BEGIN_SRC elisp
+;; make and immediately invoke
+((lambda (x y) (message (format "x, y ≈ %s, %s" x y))) 1 2)
+
+;; make then way later invoke
+(setq my-func (lambda (x y) (message (format "x, y ≈ %s, %s" x y))))
+(funcall my-func 1 2)
+;; (my-func 1 2) ;; invalid!
+#+END_SRC
+  The last one is invalid since ~(f x0 … xk)~ is only meaningful for functions
+  ~f~ formed using ~defun~.
+
++ Recursion and IO:
+   ~(defun sum (n) (if (<= n 0) 0 (+ n (sum (- n 1)))))~
+  - Now ~(sum 100) → 5050~.
+
++ IO: ~(defun make-sum (n) (interactive "n") (message-box (format "%s" (sum n))))~
+  - The ~interactive~ option means the value of ~n~ is queried to the user; e.g.,
+    enter 100 after executing ~(execute-extended-command "" "make-sum")~
+    or ~M-x make-sum~.
+  - In general ~interactive~ may take no arguments.
+    The benefit is that the function can be executed using ~M-x~,
+    and is then referred to as an interactive function.
+
+* Conditionals
+
++ Booleans: ~nil~, the empty list ~()~, is considered /false/, all else
+  is /true/. 
+  - Note: ~nil ≈ () ≈ '() ≈ 'nil~.
++ ~(if ⟨condition⟩ ⟨thenClause⟩ ⟨optionalElseClause⟩)~
+  - Note: ~(if x y) ≈ (if x y nil).~
+
+* List Manipulation
+
++ Produce a syntactic, un-evaluated list, we use the single quote:
+  ~'(1 2 3)~.
+
++ Construction: ~(cons 'x₀ '(x₁ … xₖ)) → (x₀ x₁ … xₖ)~.
++ Head, or /contents of the address part of the register/:
+   ~(car '(x₀ x₁ … xₖ)) → x₀~.
++ Tail, or /contents of the decrement part of the register/:
+   ~(cdr '(x₀ x₁ … xₖ)) → (x₁ … xₖ)~.
++ Deletion: ~(delete e xs)~ yields ~xs~ with all instance of ~e~ removed.
+  - E.g., ~(delete 1 '(2 1 3 4 1)) → '(2 3 4)~.
+
+E.g., ~(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)~.
+
+* Variables
++ Global Variables: ~(setq name value)~; e.g., ~(setq my-list '(1 2 3))~.
++ Local Scope: ~(let ((name₀ val₀) … (nameₖ valₖ)) …use nameᵢ here… )~.
+
+:TryItOut:
+(describe-symbol 'show-trailing-whitespace)
+(setq-default show-trailing-whitespace t)
+:End:
+
++ Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
+  - This is superficially similar to pointers:
+    Given ~int *x = …~, ~x~ is the name (address)
+    whereas ~*x~ is the value.
+  - The quote simply forbids evaluation; it means /take it literally as you see it/
+    rather than looking up the definition and evaluating.
+#+BEGIN_SRC elisp
+(setq this 'hello)
+(setq that this)
+
+;;  this  → hello
+;; 'this  → this
+;;  that  → hello
+;; 'that  → that
+#+END_SRC 
+
+Note: ~'x ≈ (quote x)~.
+
+* Block of Code
+
+Use the ~progn~ function to evaluate multiple statements. E.g.,
+#+BEGIN_SRC elisp
+(progn
+  (message "hello")
+  (setq x  (if (< 2 3) 'two-less-than-3))
+  (sleep-for 1)
+  (message (format "%s" x))
+)
+#+END_SRC
+* Reads
+
++ [[http://sachachua.com/blog/wp-content/uploads/2013/05/How-to-Learn-Emacs-v2-Large.png][How to Learn Emacs: A Hand-drawn One-pager for Beginners / A visual tutorial]]
++ [[https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top][An Introduction to Programming in Emacs Lisp]]  
++ [[https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top][GNU Emacs Lisp Reference Manual]]
+
+* newpage :ignore:
+\newpage
+* Loops
+
+Sum the first ~10~ numbers:
+#+BEGIN_SRC elisp
+(let ((n 100) (i 0) (sum 0))
+  (while (<= i n)
+    (setq sum (+ sum i))
+    (setq i   (+ i   1))
+  )
+  (message (number-to-string sum))
+)
+#+END_SRC
+
+Essentially a for-loop:
+#+BEGIN_SRC elisp
+(dotimes (x   ;; refers to current iteration, initally 0
+          n   ;; total number of iterations
+	  ret ;; optional: return value of the loop
+	 )
+  …body here, maybe mentioning x…  	 
+)
+
+;; E.g., sum of first n numbers
+(let ((sum 0) (n 100))
+  (dotimes (i (1+ n) sum) (setq sum (+ sum i))))
+#+END_SRC
+
+A for-each loop: Iterate through a list.
+Like ~dotimes~, the final item is the expression value at the end of the loop.
+#+BEGIN_SRC elisp
+(dolist (elem '("a" 23 'woah-there) nil)
+  (message (format "%s" elem))
+  (sleep-for 0 500)
+)
+#+END_SRC
+
+~(describe-symbol 'sleep-for)~ ;-)
+
+* newpage :ignore:
+\newpage
+* Hooks
+Hooks are lists of functions that are called from Emacs Lisp in order to modify the behaviour of something. For example, different modes have their own hooks so that you can add functions that will run when that mode is initialised.
+
+E.g.,
+let's add the ~go~ function to the list of functions when a buffer 
+is initialised with org-mode.
+#+BEGIN_SRC elisp
+(describe-symbol 'org-mode-hook)
+
+(defun go () (message-box "It worked!"))
+
+  (add-hook 'org-mode-hook 'go)
+≈ (add-to-list 'org-mode-hook 'go)
+
+;; Now execute: (revert-buffer) to observe “go” being executed.
+;; Later remove this silly function from the list:
+(remove-hook 'org-mode-hook 'go)
+#+END_SRC
+* newpage :ignore:
+# \newpage
+\vfill
+
+* COMMENT Making README.md
+
+C-c C-c: Evaluate src block.
+
+#+NAME: make-readme
+#+BEGIN_SRC emacs-lisp :results none
+(with-temp-buffer
+    (insert 
+    "#+EXPORT_FILE_NAME: README.md
+     #+HTML: <h1> ElispCheatSheet </h1>
+     #+OPTIONS: toc:nil d:nil
+     # Toc is displayed below at a strategic position.
+
+     Quick reference to the core language of Emacs ---Editor MACroS.
+     
+     ( Much Emacs Lisp was utilised in making my blog
+     https://alhassy.github.io )
+
+     *The listing sheet, as PDF, can be found
+     [here]({{{URL}}}/blob/master/CheatSheet.pdf)*, 
+     while below is an unruly html rendition.
+ 
+     This reference sheet is built around the system
+     https://github.com/alhassy/CheatSheet.
+
+     #+TOC: headlines 2
+     #+INCLUDE: CheatSheet.org     
+    ")
+    ;; (set-visited-file-name "ReadIt2.md")
+    (org-mode)
+    (org-md-export-to-markdown)
+)
+#+END_SRC
+
+* COMMENT footer
+
+# Local Variables:
+# eval: (org-babel-tangle)
+# eval: (progn (org-babel-goto-named-src-block "make-readme") (org-babel-execute-src-block) (outline-hide-sublevels 1))
+# eval: (load-file "CheatSheet.el")
+# compile-command: (my-org-latex-export-to-pdf)
+# End:
