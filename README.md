@@ -15,14 +15,17 @@ This reference sheet is built around the system
 
 # Table of Contents
 
-1.  [Functions](#org4f71fc0)
-2.  [Variables](#orgba2a728)
-3.  [Block of Code](#org550c2a9)
-4.  [List Manipulation](#orgb6a2942)
-5.  [Conditionals](#org348a5db)
-6.  [Reads](#orgf972b25)
-7.  [Loops](#org3e76f26)
-8.  [Hooks](#orgf3bc8a8)
+1.  [Functions](#org7ad2c2d)
+2.  [Variables](#org87714ff)
+3.  [Block of Code](#org5bb854c)
+4.  [List Manipulation](#org40b1ba7)
+5.  [Conditionals](#org3619b44)
+6.  [Exception Handling](#orgec4021b)
+7.  [Loops](#orgbc7670e)
+8.  [Records](#org71b9272)
+9.  [Macros](#org01f6c3f)
+10. [Hooks](#org4319b71)
+11. [Reads](#org606d01c)
 
 
 
@@ -45,12 +48,13 @@ This reference sheet is built around the system
     `describe-mode`. Essentially a comprehensive yet terse reference is provided.
 
 
-<a id="org4f71fc0"></a>
+<a id="org7ad2c2d"></a>
 
 # Functions
 
 -   Function invocation: `(f x₀ x₁ … xₙ)`. E.g., `(+ 3 4)` or `(message "hello")`.
     -   After the closing parens invoke `C-x C-e` to execute them.
+    -   *Warning!* Arguments are evaluated **before** the function is executed.
     -   Only prefix invocations means we can use `-,+,*` in *names*
         since `(f+*- a b)` is parsed as applying function `f+*-` to arguments `a, b`.
         
@@ -78,7 +82,11 @@ This reference sheet is built around the system
         ;; (my-func 1 2) ;; invalid!
     
     The last one is invalid since `(f x0 … xk)` is only meaningful for functions
-    `f` formed using `defun`.
+    `f` formed using `defun`. More honestly, Elisp has distinct namespaces for functions and variables.
+    
+    Indeed, `(defun f (x₀ … xₖ) body) ≈ (fset 'f (lambda (x₀ … xₖ) body))`.
+    
+    -   Using `fset`, with quoted name, does not require using `funcall`.
 
 -   Recursion and IO:
     `(defun sum (n) (if (<= n 0) 0 (+ n (sum (- n 1)))))`
@@ -95,7 +103,7 @@ This reference sheet is built around the system
 \newpage
 
 
-<a id="orgba2a728"></a>
+<a id="org87714ff"></a>
 
 # Variables
 
@@ -103,12 +111,13 @@ This reference sheet is built around the system
     
     -   Generally: `(setq name₀ value₀ ⋯ nameₖ valueₖ)`.
     
-    Use `devfar` for *constant* global variables, which
-    permit a documentation string.
-    E.g., `(defvar my-x 14 "my cool thing")`.
+    Use `devfar` for global variables since it
+    permits a documentation string &#x2013;but updates must be performed with `setq.
+      E.g., ~(defvar my-x 14 "my cool thing")`.
 
 -   Local Scope: `(let ((name₀ val₀) … (nameₖ valₖ)) bodyBlock)`.
     -   `let*` permits later bindings to refer to earlier ones.
+    -   The simpler `let` indicates to the reader that there are no dependencies between the variables.
 
 -   Elisp is dynamically scoped: The caller's stack is accessible by default!
     
@@ -164,30 +173,36 @@ Useful for loops, among other things:
 </table>
 
 -   Quotes: `'x` refers to the *name* rather than the *value* of `x`.
+    
     -   This is superficially similar to pointers:
         Given `int *x = …`, `x` is the name (address)
         whereas `*x` is the value.
     -   The quote simply forbids evaluation; it means *take it literally as you see it*
         rather than looking up the definition and evaluating.
-
-    (setq this 'hello)
-    (setq that this)
+    -   Note: `'x ≈ (quote x)`.
     
-    ;;  this  → hello
-    ;; 'this  → this
-    ;;  that  → hello
-    ;; 'that  → that
+    Akin to English, quoting a word refers to the word and not what it denotes.
+    
+    ( This lets us treat *code* as *data*! E.g., `'(+ 1 2)` evaluates to `(+ 1 2)`, a function call,
+      not the value `3`! Another example, `*` is code but `'*`
+      is data, and so `(funcall '* 2 4)` yields 8. )
 
-Note: `'x ≈ (quote x)`.
+-   *Atoms* are the simplest objects in Elisp: They evaluate to themselves.
+    -   E.g., `5, "a", 2.78, 'hello`, lambda's form function literals in that, e.g.,
+        `(lambda (x) x)` evaluates to itself.
+
+\room
+
+Elisp expressions are either atoms or function application &#x2013;nothing else!
 
 \newpage
 
 
-<a id="org550c2a9"></a>
+<a id="org5bb854c"></a>
 
 # Block of Code
 
-Use the `progn` function to evaluate multiple statements. E.g.,
+Use the `progn` function to treat multiple expressions as a single expression. E.g.,
 
     (progn
       (message "hello")
@@ -230,7 +245,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
         -   Provided the `sᵢ` are simple function application forms.
 
 
-<a id="orgb6a2942"></a>
+<a id="org40b1ba7"></a>
 
 # List Manipulation
 
@@ -247,8 +262,24 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
 
 E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)`.
 
+\room
+Since variables refer to literals and functions have lambdas as literals, we 
+can produce forms that take functions as arguments. E.g., the standard `mapcar`
+may be construed:
 
-<a id="org348a5db"></a>
+    (defun my-mapcar (f xs)
+      (if (null xs) xs
+       (cons (funcall f (car xs)) (my-mapcar f (cdr xs)))
+      )
+    )
+    
+    (my-mapcar (lambda (x) (* 2 x)) '(0 1 2 3 4 5)) ;; ⇒ (0 2 4 6 8 10)
+    (my-mapcar 'upcase '("a" "b" "cat")) ;; ⇒ ("A" "B" "CAT")
+    
+    (describe-symbol 'remove-if-not) ;; “filter” ;-)
+
+
+<a id="org3619b44"></a>
 
 # Conditionals
 
@@ -289,16 +320,22 @@ E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" n
 \vfill
 
 
-<a id="orgf972b25"></a>
+<a id="orgec4021b"></a>
 
-# Reads
+# Exception Handling
 
--   [How to Learn Emacs: A Hand-drawn One-pager for Beginners / A visual tutorial](http://sachachua.com/blog/wp-content/uploads/2013/05/How-to-Learn-Emacs-v2-Large.png)
--   [An Introduction to Programming in Emacs Lisp](https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top)
--   [GNU Emacs Lisp Reference Manual](https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top)
+We can attempt a dangerous clause and catch a possible exceptional case
+&#x2013;below we do not do so via `nil`&#x2013; for which we have an associated handler.
+
+    (condition-case nil attemptClause (error recoveryBody))
+    
+      (ignore-errors attemptBody) 
+    ≈ (condition-case nil (progn attemptBody) (error nil))
+    
+    (ignore-errors (+ 1 "nope")) ;; ⇒ nil
 
 
-<a id="org3e76f26"></a>
+<a id="orgbc7670e"></a>
 
 # Loops
 
@@ -368,7 +405,79 @@ and Java do-while loops. I personally prefer functional programming, so wont
 look into this much.
 
 
-<a id="orgf3bc8a8"></a>
+<a id="org71b9272"></a>
+
+# Records
+
+    (defstruct X "Record with fields fᵢ having defaults dᵢ" 
+      (f₀ d₀) ⋯ (fₖ dₖ))
+    
+    ;; Automatic constructor is “make-X” with keyword parameters for 
+    ;; initialising any subset of the fields!
+    ;; Hence (expt 2 (1+ k)) kinds of possible constructor combinations!
+    (make-X :f₀ val₀ :f₁ val₁ ⋯ :fₖ valₖ) ;; Any, or all, fᵢ may be omitted
+    
+    ;; Automatic runtime predicate for the new type.
+    (X-p (make-X)) ;; ⇒ true
+    (X-p 'nope)    ;; ⇒ nil
+    
+    ;; Field accessors “X-fᵢ” take an X record and yield its value.
+    
+    ;; Field update: (setf (X-fᵢ x) valᵢ)
+    
+    (defstruct book
+      title  (year  0))
+    
+    (setq ladm (make-book :title "Logical Approach to Discrete Math" :year 1993))
+    (book-title ladm) ;; ⇒ "Logical Approach to Discrete Math"
+    (setf (book-title ladm) "LADM")
+    (book-title ladm) ;; ⇒ "LADM"
+
+
+<a id="org01f6c3f"></a>
+
+# Macros
+
+-   Sometimes we don't want eager evaluation; i.e., we do not want to
+    recursively evaluate arguments before running a function.
+-   *Macros* let us manipulate a program's abstract syntax tree, usually
+    by delaying some computations &#x2013;easy since Elisp lets us treat code as data.
+
+\room
+`` `(e₀ e₁ ⋯ eₖ) `` is known as a *quasi-quote*: It produces syntactic data like `quote`
+  but allows computations to occur &#x2013;any expression prefixed with a comma as in `,e₃`&#x2013;
+  thereby eagerly evaluating some and delaying evaluation of others.
+
+    (defun my/lazy-or (this that)
+      (if this t that))
+    
+    (my/lazy-or (print "yup") (print "nope")) ;; evaluates & prints both clauses!
+    (my/lazy-or t (/ 2 0)) ;; second clause runs needlessly, causing an error.
+    
+    ;; Delay argument evaluation using defmacro
+    (defmacro my/lazy-or-2 (this that)
+      `(if ,this t ,that))
+    
+    (my/lazy-or-2 (print "yup") (print "nope")) ;; just "yup" ;-)
+    (my/lazy-or-2 t (/ 2 0)) ;; second clause not evaluated
+    
+    ;; What code is generated by our macro?
+    (macroexpand '(my/lazy-or-2 t (/ 2 0))) ;; ⇒ (if t t (/2 0))
+
+We've added new syntax to Elisp!
+
+\room
+The above ‘equations’ can be checked by running `macroexpand`; \newline e.g.,
+`(when c s₀ ⋯ sₙ) ≈ (if c (progn s₀ ⋯ sₙ) nil)` holds since
+
+    (macroexpand '(when c s₀ ⋯ sₙ)) ;; ⇒ (if c (progn s₀ ⋯ sₙ))
+
+Woah!
+
+\newpage
+
+
+<a id="org4319b71"></a>
 
 # Hooks
 
@@ -392,4 +501,16 @@ is initialised with org-mode.
     (remove-hook 'org-mode-hook 'go)
 
 -   The `'after-init-hook` event will run functions after the rest of the init-file has finished loading.
+
+\vfill
+
+
+<a id="org606d01c"></a>
+
+# Reads
+
+-   [How to Learn Emacs: A Hand-drawn One-pager for Beginners / A visual tutorial](http://sachachua.com/blog/wp-content/uploads/2013/05/How-to-Learn-Emacs-v2-Large.png)
+-   [Learn Emacs Lisp in 15 minutes](https://emacs-doctor.com/learn-emacs-lisp-in-15-minutes.html) &#x2014; <https://learnxinyminutes.com/>
+-   [An Introduction to Programming in Emacs Lisp](https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top)
+-   [GNU Emacs Lisp Reference Manual](https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top)
 
