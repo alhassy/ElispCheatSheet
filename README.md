@@ -15,14 +15,14 @@ This reference sheet is built around the system
 
 # Table of Contents
 
-1.  [Functions](#org93777fc)
-2.  [Variables](#orgc310d6c)
-3.  [Block of Code](#org994feb6)
-4.  [List Manipulation](#orga2352b0)
-5.  [Conditionals](#orgb2ce15b)
-6.  [Reads](#org23e3f6d)
-7.  [Loops](#org215ff9d)
-8.  [Hooks](#org5fdb874)
+1.  [Functions](#org4f71fc0)
+2.  [Variables](#orgba2a728)
+3.  [Block of Code](#org550c2a9)
+4.  [List Manipulation](#orgb6a2942)
+5.  [Conditionals](#org348a5db)
+6.  [Reads](#orgf972b25)
+7.  [Loops](#org3e76f26)
+8.  [Hooks](#orgf3bc8a8)
 
 
 
@@ -41,9 +41,11 @@ This reference sheet is built around the system
 -   To find out more about `name` execute `(describe-symbol 'name)`!
     -   After the closing parens invoke `C-x C-e` to evaluate.
 -   To find out more about a key press, execute `C-h k` then the key press.
+-   To find out more about the current mode you're in, execute `C-h m` or
+    `describe-mode`. Essentially a comprehensive yet terse reference is provided.
 
 
-<a id="org93777fc"></a>
+<a id="org4f71fc0"></a>
 
 # Functions
 
@@ -93,30 +95,73 @@ This reference sheet is built around the system
 \newpage
 
 
-<a id="orgc310d6c"></a>
+<a id="orgba2a728"></a>
 
 # Variables
 
--   Global Variables: `(setq name value)`; e.g., `(setq my-list '(1 2 3))`.
-    -   This creates brand-new variables; generally: `(setq name₀ value₀ ⋯ nameₖ valueₖ)`.
--   Local Scope: `(let ((name₀ val₀) … (nameₖ valₖ)) …use nameᵢ here… )`.
+-   Global Variables, Create & Update: `(setq name value)`.
+    
+    -   Generally: `(setq name₀ value₀ ⋯ nameₖ valueₖ)`.
+    
+    Use `devfar` for *constant* global variables, which
+    permit a documentation string.
+    E.g., `(defvar my-x 14 "my cool thing")`.
+
+-   Local Scope: `(let ((name₀ val₀) … (nameₖ valₖ)) bodyBlock)`.
+    -   `let*` permits later bindings to refer to earlier ones.
 
 -   Elisp is dynamically scoped: The caller's stack is accessible by default!
     
         (defun woah () 
           "If any caller has a local ‘work’, they're in for a nasty bug
-           from me!"
-          (setq work 666))
+           from me! Moreover, they better have ‘a’ defined in scope!"
+          (setq work (* a 111))) ;; Benefit: Variable-based scoped configuration.
         
         (defun add-one (x)
           "Just adding one to input, innocently calling library method ‘woah’."
-          (let ((work (+ 1 x)))
-            (woah) ;; May change ‘work’!
+          (let ((work (+ 1 x)) (a 6))
+            (woah) ;; May change ‘work’ or access ‘a’!
             work
           )
         )
         
         ;; (add-one 2) ⇒ 666
+
+Useful for loops, among other things:
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left"><span class="underline">C</span></td>
+<td class="org-left"><span class="underline">Elisp</span></td>
+</tr>
+
+
+<tr>
+<td class="org-left">`x += y`</td>
+<td class="org-left">`(incf x y)`</td>
+</tr>
+
+
+<tr>
+<td class="org-left">`x--`</td>
+<td class="org-left">`(decf x)`</td>
+</tr>
+
+
+<tr>
+<td class="org-left">`x++`</td>
+<td class="org-left">`(incf x)`</td>
+</tr>
+</tbody>
+</table>
 
 -   Quotes: `'x` refers to the *name* rather than the *value* of `x`.
     -   This is superficially similar to pointers:
@@ -135,8 +180,10 @@ This reference sheet is built around the system
 
 Note: `'x ≈ (quote x)`.
 
+\newpage
 
-<a id="org994feb6"></a>
+
+<a id="org550c2a9"></a>
 
 # Block of Code
 
@@ -183,7 +230,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
         -   Provided the `sᵢ` are simple function application forms.
 
 
-<a id="orga2352b0"></a>
+<a id="orgb6a2942"></a>
 
 # List Manipulation
 
@@ -201,7 +248,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
 E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)`.
 
 
-<a id="orgb2ce15b"></a>
+<a id="org348a5db"></a>
 
 # Conditionals
 
@@ -239,8 +286,10 @@ E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" n
     
     With case you can use either `t` or `otherwise` for the default case, but it must come last.
 
+\vfill
 
-<a id="org23e3f6d"></a>
+
+<a id="orgf972b25"></a>
 
 # Reads
 
@@ -249,7 +298,7 @@ E.g., `(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" n
 -   [GNU Emacs Lisp Reference Manual](https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top)
 
 
-<a id="org215ff9d"></a>
+<a id="org3e76f26"></a>
 
 # Loops
 
@@ -286,41 +335,8 @@ Like `dotimes`, the final item is the expression value at the end of the loop.
 
 `(describe-symbol 'sleep-for)` ;-)
 
-Loop essentials:
-
-<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-
-
-<colgroup>
-<col  class="org-left" />
-
-<col  class="org-left" />
-</colgroup>
-<tbody>
-<tr>
-<td class="org-left">C</td>
-<td class="org-left">Elisp</td>
-</tr>
-
-
-<tr>
-<td class="org-left">`x += y`</td>
-<td class="org-left">`(incf x y)`</td>
-</tr>
-
-
-<tr>
-<td class="org-left">`x--`</td>
-<td class="org-left">`(decf x)`</td>
-</tr>
-
-
-<tr>
-<td class="org-left">`x++`</td>
-<td class="org-left">`(incf x)`</td>
-</tr>
-</tbody>
-</table>
+\newpage
+**Example of Above Constructs**
 
     (defun my/cool-function (N D)
       "Sum the numbers 0..N that are not divisible by D"
@@ -344,17 +360,20 @@ Loop essentials:
 Note that we could have had a final redundant `throw 'return`:
 Redundant since the final expression in a block is its return value.
 
+\room
+
 The special `loop` constructs provide immensely many options to form
 nearly any kind of imperative loop. E.g., Python-style ‘downfrom’ for-loops
 and Java do-while loops. I personally prefer functional programming, so wont
 look into this much.
 
 
-<a id="org5fdb874"></a>
+<a id="orgf3bc8a8"></a>
 
 # Hooks
 
-Hooks are lists of functions that are called from Emacs Lisp in order to modify the behaviour of something. For example, different modes have their own hooks so that you can add functions that will run when that mode is initialised.
+-   We can ‘hook’ methods to run at particular events.
+-   Hooks are lists of functions that are, for example, run when a mode is initialised.
 
 E.g.,
 let's add the `go` function to the list of functions when a buffer 
@@ -365,9 +384,12 @@ is initialised with org-mode.
     (defun go () (message-box "It worked!"))
     
       (add-hook 'org-mode-hook 'go)
+    ≈ (add-hook 'org-mode-hook '(lambda () (message-box "It worked!")))
     ≈ (add-to-list 'org-mode-hook 'go)
     
     ;; Now execute: (revert-buffer) to observe “go” being executed.
     ;; Later remove this silly function from the list:
     (remove-hook 'org-mode-hook 'go)
+
+-   The `'after-init-hook` event will run functions after the rest of the init-file has finished loading.
 
