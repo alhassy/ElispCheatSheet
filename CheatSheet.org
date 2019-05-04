@@ -503,6 +503,109 @@ The above ‘equations’ can be checked by running ~macroexpand~; \newline e.g.
 
 Woah!
 
+* Macros, take II
+
+  0. Certain problems are elegantly solved specific language constructs;
+     e.g., list operations are generally best defined by pattern matching.
+     # Likewise for any ADT.
+
+  1. Macros let us make the best way to solve a problem when our language does
+     not give to us.
+     
+     # --They can also be used to reduce repetitive visual noise.
+     # Which is achievable by using higher-order operations.
+     #
+     # IMHO macros are best for creating new syntax.
+
+  2.  Macro expansion happens before runtime, function execution, and so the
+      arguments passed to a macro will contain raw source code.
+
+      Backquotes let us use the comma to cause the actual variable /names/
+      and /values/ to be used --e.g., ~x~ is a ‘meta-variable’ and its value, ~,x~,
+      refers to a real variable or value.
+
+      The ~&rest~ marker allows us to have multiple statements at the end of the macro:
+      The macro expander provides all remaining expressions in the macro as a list,
+      the contents of which may be inserted in place, not as a list, using the
+      ~,@~ splice comma --we need to ensure there's a ~progn~.
+
+ + ~macroexpand~ takes /code/ and expands any macros in it. It's useful in debugging macros.
+  
+#+BEGIN_SRC emacs-lisp
+ ;; Noisy parens!
+ (let ((x "5")) (message x))
+
+ ;; Better.
+ (let1 x "5" (message x))
+
+ ;; How?
+ 
+ (defmacro let1 (var val &rest body)
+  `(let ((,var ,val)) ,@body)
+ )
+
+ ;; What does it look like?
+ (macroexpand '(let1 x "5" (message x)))
+ ;; ⇒ (let ((x 5)) (message x))
+
+ 
+ (defmacro first (&rest body)
+  `(eval (car (quote ,body)))
+ )
+ ;;   (first x y z)
+ ;; ⇒ ,body ≈ (x y z)
+ ;; ⇒ (quote ,body) ≈ '(x y z)
+ ;; ⇒ (car (quote ,body)) ≈ x  ─code fragment.
+ ;; ⇒ `(eval ⋯) ≈ “actually execute x”
+
+ (first (message "x") (message "y"))
+
+ ;; What does it look like?
+ (macroexpand '(first x y z))
+#+END_SRC
+
++ If ~var~ is an argument to a macro where ~,var~ occurs multiple times, then since
+  arguments to macros are raw source code, each occurrence of ~,var~ is an execution of the
+  code referenced by ~var~.
+
+  Avoid such repeated execution by using a ~let~ to capture the result, call it ~res~, once
+  and use the ~res~ in each use site.
+
+  Now we've made use of the name ~res~ and our users cannot use that name correctly.
+  Avoid such /unintended/ capture by using ~gensym~ to provide us with a globally unique
+  name which is bound to a variable, say ~r~, then we bind the result of executing ~var~
+  to the fresh name ~,r~.
+
+  Whence: ~`(⋯,var⋯,var⋯) ⇒ (let ((r (gensym))) `(let ((,r ,var)) ⋯,r⋯,r⋯))~.
+
+  Note that the name ~r~ is outside the backquote; it is part of code that is run
+  at macro expansion time, not runtime. The value of the final ~let~ is then the backquoted
+  matter, which makes /no/ reference to ~r~, but instead makes use of the name it
+  refers to, ~,r~. Neato!
+
++ Test that you don't have accidentally variable capture by passing in an insert
+   statement and see how many times insertions are made.
+
++ Macros that /intentionally/ use variable capture as a feature, rather than a bug,
+  to provide names available in the macro body are called ‘anaphoric macros’.
+
+  E.g., ~(split list no yes)~ provides the names ~head, tail~ in the ~yes~ body
+  to refer to the head and tail of the given ~list~, say via a ~let~, but not so in the
+  ~no~ argument for when ~list~ is empty. Whence, elegant pattern matching on lists.
+
+#+BEGIN_SRC emacs-lisp
+(defmacro split (list no &rest yes)
+  `(if ,list (let ((head (car ,list)) (tail (cdr ,list))) ,@yes) ,no)
+)
+
+;; Example use
+
+(defun sum (xs) (split xs 0 (+ head (sum tail))))
+
+(sum '(1 2 3 4 5)) ;; ⇒ 15
+#+END_SRC
+
+
 * spacing newpage                                                    :ignore:
 \newpage
 * Hooks
