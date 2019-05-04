@@ -1,6 +1,7 @@
 # f7 preview changes
 # f8 commit each change
 # f9 push changes
+
 * Header                                                      :do:not:ignore:
 #+TITLE: Elisp Reference Sheet
 # SUBTITLE: Cheat Sheet Template
@@ -35,7 +36,6 @@
 (describe-symbol 'eldoc-mode)
 (describe-symbol 'describe-symbol)
 :End:
-
 
 
 * Functions
@@ -90,6 +90,20 @@
   - In general ~interactive~ may take no arguments.
     The benefit is that the function can be executed using ~M-x~,
     and is then referred to as an interactive function.
+
+* COMMENT TODO optional arguments
+
+#+BEGIN_SRC emacs-lisp
+;; Unsupplied optional arguments are bound to ‘nil’.
+(cl-defun f (a b &optional c (d 5))
+   (format "a: %s, b: %s, c: %s, d: %s" a b c d)
+)
+
+;; (f 0 1) ⇒ "a: 0, b: 1, c: nil, d: 5"
+;; (f 0 1 'nice) ⇒ "a: 0, b: 1, c: nice, d: 5"
+;; (f 0 1 'nice 'woah) ⇒ "a: 0, b: 1, c: nice, d: woah"
+#+END_SRC
+
 
 * spacing newpage                                                    :ignore:
 \newpage
@@ -526,9 +540,6 @@ is initialised with org-mode.
 + [[https://emacs-doctor.com/learn-emacs-lisp-in-15-minutes.html][Learn Emacs Lisp in 15 minutes]] --- https://learnxinyminutes.com/
 + [[https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top][An Introduction to Programming in Emacs Lisp]]  
 + [[https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top][GNU Emacs Lisp Reference Manual]]
-
-* COMMENT Useful features
-+ M-; :: Toggle (un)commenting a region.
 
 * COMMENT Making README.md
 
