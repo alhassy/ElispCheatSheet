@@ -1,4 +1,6 @@
 # f7 preview changes
+# (local-set-key (kbd "<f7>") (lambda () (interactive) (async-shell-command (concat "open " (org-latex-export-to-pdf)))))
+
 # f8 commit each change
 # f9 push changes
 
@@ -21,7 +23,24 @@
 * LaTeX Setup                                       :ignore:Needs_to_be_here:
 # Can be obtained from: https://github.com/alhassy/MyUnicodeSymbols
 #
-#+LATEX_HEADER: \usepackage{MyUnicodeSymbols}
+#+LATEX_HEADER: \usepackage{/Users/musa/MyUnicodeSymbols/MyUnicodeSymbols}
+
+#+NAME: parallel enviro
+#+BEGIN_EXPORT latex 
+% \setlength{\columnseprule}{2pt}
+
+\renewenvironment{parallel}[1][2] % one argument, whose default value is literal `2`.
+ {
+  \setlength{\columnseprule}{2pt}
+  \begin{minipage}[t]{\linewidth} % width of minipage is 100% times of \linewidth
+  \begin{multicols}{#1}  % default is `2`
+ }
+ {
+ \setlength{\columnseprule}{0pt}
+  \end{multicols}
+  \end{minipage}
+ }
+#+END_EXPORT
 
 * Intro :ignore:
 /Everything is a list!/
@@ -463,6 +482,174 @@ look into this much.
 #+END_SRC
 
 * Macros
+
+  Macros let us add new syntax, like ~let1~ for single lets:
+  #
+  # Need to have a space before using ‘parallel’.
+  #
+  #+begin_parallel org
+     #+BEGIN_SRC emacs-lisp
+ ;; Noisy parens!
+ (let ((x "5")) (message x))
+
+ ;; Better.
+ (let1 x "5" (message x))
+
+ ;; How?
+ (defmacro let1 (var val &rest body)
+  `(let ((,var ,val)) ,@body))
+
+ ;; What does it look like?
+ (macroexpand
+   '(let1 x "5" (message x)))
+ ;; ⇒ (let ((x 5)) (message x))
+ #+END_SRC
+   \columnbreak   
+     #+BEGIN_SRC emacs-lisp
+ ;; No progn; (first x y z) ≈ x    
+ (defmacro first (&rest body)
+  (car `,@body))
+
+ ;; Need to use “progn”!
+ (defmacro not-first (&rest body)
+  `(progn ,@(cdr `,@body)))
+
+ (macroexpand '(not-first x y z))
+ ;; `,@body       ⇒ (x y z)
+ ;; (cdr `,@body) ⇒ (y z)
+ ;; `(progn ,@(cdr `,@body))
+ ;;        ⇒ (progn y z)
+#+END_SRC
+
+  :Try_it_out:
+  #+BEGIN_SRC emacs-lisp
+  (first (insert "x") (insert "y") (message "z"))
+    
+  (not-first (insert "x") (insert "y") (message "z"))
+#+END_SRC
+  :End:
+
+  #+end_parallel
+  
+  0. Certain problems are elegantly solved specific language constructs;
+     e.g., list operations are generally best defined by pattern matching.
+     # Likewise for any ADT.
+
+  1. Macros let us /make/ the best way to solve a problem when our language does
+     not give it to us.
+     
+     # --They can also be used to reduce repetitive visual noise.
+     # Which is achievable by using higher-order operations.
+     #
+     # IMHO macros are best for creating new syntax.
+
+  2.  Macro expansion happens before runtime, function execution, and so the
+      arguments passed to a macro will contain raw source code.
+
+      [[http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm][Backquotes]] let us use the comma to cause the actual variable /names/
+      and /values/ to be used --e.g., ~x~ is a ‘meta-variable’ and its value, ~,x~,
+      refers to a real variable or value.
+
+      The ~&rest~ marker allows us to have multiple statements at the end of the macro:
+      The macro expander provides all remaining expressions in the macro as a list,
+      the contents of which may be inserted in place, not as a list, using the
+      [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html][ ~,@~ splice comma]]  --we need to ensure there's a ~progn~.
+
+       # Use list elements in-place:
+        ~`(pre ,@(list s₀ ⋯ sₙ) post) ≈ `(pre s₀ ⋯ sₙ post)~.
+       #
+       # This works:  `(pre ,@'(s0 ⋯ sn) post)
+       #             ≈ '(pre s0 ⋯ sn post)
+       #
+       # Woah!
+  
++ ~macroexpand~ takes /code/ and expands any macros in it. It's useful in debugging macros.
+  
+  #  \room
+  The above ‘equations’ can be checked by running ~macroexpand~; \newline e.g.,
+  ~(when c s₀ ⋯ sₙ) ≈ (if c (progn s₀ ⋯ sₙ) nil)~ holds since:
+
+   #+BEGIN_SRC elisp
+(macroexpand '(when c s₀ ⋯ sₙ)) ;; ⇒ (if c (progn s₀ ⋯ sₙ))
+#+END_SRC
+    
++ If ~var~ is an argument to a macro where ~,var~ occurs multiple times, then since
+  arguments to macros are raw source code, each occurrence of ~,var~ is an execution of the
+  code referenced by ~var~.
+
+  \room
+  Avoid such repeated execution by using a ~let~ to capture the result, call it ~res~, once
+  and use the ~res~ in each use site.
+
+  \room
+  Now we've made use of the name ~res~ and our users cannot use that name correctly.
+  Avoid such /unintended/ capture by using ~gensym~ to provide us with a globally unique
+  name which is bound to a variable, say ~r~, then we bind the result of executing ~var~
+  to the fresh name ~,r~.
+
+  \room  
+  Whence: ~`(⋯,var⋯,var⋯)~
+    @@latex:\newline{\color{white}.}\hspace{2em}@@
+    ~⇒ (let ((r (gensym))) `(let ((,r ,var)) ⋯,r⋯,r⋯))~.
+
+  \room  
+  Note that the name ~r~ is outside the backquote; it is part of code that is run
+  at macro expansion time, not runtime. The value of the final ~let~ is then the backquoted
+  matter, which makes /no/ reference to ~r~, but instead makes use of the name it
+  refers to, ~,r~. Neato!
+
+  \room
+  Ex., remove repeated execution from ~(defmacro twice (var) `(list ,var ,var))~.
+  :Try_it_out:
+  #+BEGIN_SRC emacs-lisp
+(defmacro twice (var)
+  `(list ,var ,var))
+
+(macroexpand '(twice x))
+
+(twice 3)
+(twice (progn (insert "\nwow") 3))
+
+(defmacro duplicate (var)
+  (let1 r (gensym)
+    `(let1 ,r ,var
+       (list ,r ,r)
+    )
+  )
+)
+
+(duplicate 3)
+(duplicate (progn (insert "\nwow") 3))
+#+END_SRC
+  :End:
+
++ Test that you don't have accidentally variable capture by passing in an insert
+   statement and see how many times insertions are made.
+
++ Macros that /intentionally/ use variable capture as a feature, rather than a bug,
+  to provide names available in the macro body are called ‘anaphoric macros’.
+
+  \room  
+  E.g., ~(split list no yes)~ provides the names ~head, tail~ in the ~yes~ body
+  to refer to the head and tail of the given ~list~, say via a ~let~, but not so in the
+  ~no~ argument for when ~list~ is empty. Whence, elegant pattern matching on lists.
+
+  \room Exercise: Define ~split~.
+  :Try_it_out:
+#+BEGIN_SRC emacs-lisp
+(defmacro split (list no &rest yes)
+  `(if ,list (let ((head (car ,list)) (tail (cdr ,list))) ,@yes) ,no)
+)
+
+;; Example use
+
+(defun sum (xs) (split xs 0 (+ head (sum tail))))
+
+(sum '(1 2 3 4 5)) ;; ⇒ 15
+#+END_SRC
+:End:
+
+* COMMENT Macros :old_notes:
 + Sometimes we don't want eager evaluation; i.e., we do not want to
   recursively evaluate arguments before running a function.
 + /Macros/ let us manipulate a program's abstract syntax tree, usually
@@ -503,112 +690,9 @@ The above ‘equations’ can be checked by running ~macroexpand~; \newline e.g.
 
 Woah!
 
-* Macros, take II
-
-  0. Certain problems are elegantly solved specific language constructs;
-     e.g., list operations are generally best defined by pattern matching.
-     # Likewise for any ADT.
-
-  1. Macros let us make the best way to solve a problem when our language does
-     not give to us.
-     
-     # --They can also be used to reduce repetitive visual noise.
-     # Which is achievable by using higher-order operations.
-     #
-     # IMHO macros are best for creating new syntax.
-
-  2.  Macro expansion happens before runtime, function execution, and so the
-      arguments passed to a macro will contain raw source code.
-
-      Backquotes let us use the comma to cause the actual variable /names/
-      and /values/ to be used --e.g., ~x~ is a ‘meta-variable’ and its value, ~,x~,
-      refers to a real variable or value.
-
-      The ~&rest~ marker allows us to have multiple statements at the end of the macro:
-      The macro expander provides all remaining expressions in the macro as a list,
-      the contents of which may be inserted in place, not as a list, using the
-      ~,@~ splice comma --we need to ensure there's a ~progn~.
-
- + ~macroexpand~ takes /code/ and expands any macros in it. It's useful in debugging macros.
-  
-#+BEGIN_SRC emacs-lisp
- ;; Noisy parens!
- (let ((x "5")) (message x))
-
- ;; Better.
- (let1 x "5" (message x))
-
- ;; How?
- 
- (defmacro let1 (var val &rest body)
-  `(let ((,var ,val)) ,@body)
- )
-
- ;; What does it look like?
- (macroexpand '(let1 x "5" (message x)))
- ;; ⇒ (let ((x 5)) (message x))
-
- 
- (defmacro first (&rest body)
-  `(eval (car (quote ,body)))
- )
- ;;   (first x y z)
- ;; ⇒ ,body ≈ (x y z)
- ;; ⇒ (quote ,body) ≈ '(x y z)
- ;; ⇒ (car (quote ,body)) ≈ x  ─code fragment.
- ;; ⇒ `(eval ⋯) ≈ “actually execute x”
-
- (first (message "x") (message "y"))
-
- ;; What does it look like?
- (macroexpand '(first x y z))
-#+END_SRC
-
-+ If ~var~ is an argument to a macro where ~,var~ occurs multiple times, then since
-  arguments to macros are raw source code, each occurrence of ~,var~ is an execution of the
-  code referenced by ~var~.
-
-  Avoid such repeated execution by using a ~let~ to capture the result, call it ~res~, once
-  and use the ~res~ in each use site.
-
-  Now we've made use of the name ~res~ and our users cannot use that name correctly.
-  Avoid such /unintended/ capture by using ~gensym~ to provide us with a globally unique
-  name which is bound to a variable, say ~r~, then we bind the result of executing ~var~
-  to the fresh name ~,r~.
-
-  Whence: ~`(⋯,var⋯,var⋯) ⇒ (let ((r (gensym))) `(let ((,r ,var)) ⋯,r⋯,r⋯))~.
-
-  Note that the name ~r~ is outside the backquote; it is part of code that is run
-  at macro expansion time, not runtime. The value of the final ~let~ is then the backquoted
-  matter, which makes /no/ reference to ~r~, but instead makes use of the name it
-  refers to, ~,r~. Neato!
-
-+ Test that you don't have accidentally variable capture by passing in an insert
-   statement and see how many times insertions are made.
-
-+ Macros that /intentionally/ use variable capture as a feature, rather than a bug,
-  to provide names available in the macro body are called ‘anaphoric macros’.
-
-  E.g., ~(split list no yes)~ provides the names ~head, tail~ in the ~yes~ body
-  to refer to the head and tail of the given ~list~, say via a ~let~, but not so in the
-  ~no~ argument for when ~list~ is empty. Whence, elegant pattern matching on lists.
-
-#+BEGIN_SRC emacs-lisp
-(defmacro split (list no &rest yes)
-  `(if ,list (let ((head (car ,list)) (tail (cdr ,list))) ,@yes) ,no)
-)
-
-;; Example use
-
-(defun sum (xs) (split xs 0 (+ head (sum tail))))
-
-(sum '(1 2 3 4 5)) ;; ⇒ 15
-#+END_SRC
-
-
-* spacing newpage                                                    :ignore:
+* spacing COMMENT newpage                                                    :ignore:
 \newpage
-* Hooks
+* COMMENT Hooks
 + We can ‘hook’ methods to run at particular events.
 + Hooks are lists of functions that are, for example, run when a mode is initialised.
 
@@ -643,7 +727,8 @@ is initialised with org-mode.
 + [[https://emacs-doctor.com/learn-emacs-lisp-in-15-minutes.html][Learn Emacs Lisp in 15 minutes]] --- https://learnxinyminutes.com/
 + [[https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top][An Introduction to Programming in Emacs Lisp]]  
 + [[https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top][GNU Emacs Lisp Reference Manual]]
-
++ [[http://landoflisp.com/][Land of Lisp]]
+  
 * COMMENT Making README.md
 
 C-c C-c: Evaluate src block.
@@ -683,6 +768,6 @@ C-c C-c: Evaluate src block.
 # Local Variables:
 # eval: (org-babel-tangle)
 # eval: (progn (org-babel-goto-named-src-block "make-readme") (org-babel-execute-src-block) (outline-hide-sublevels 1))
-# eval: (load-file "CheatSheet.el")
+# eval: (org-babel-load-file "CheatSheet/CheatSheet.org")
 # compile-command: (my-org-latex-export-to-pdf)
 # End:
