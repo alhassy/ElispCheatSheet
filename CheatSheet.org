@@ -401,6 +401,18 @@ may be construed:
 #+END_SRC
 :End:
 
+Hint: If you write a predicate, think of what else you can return besides ~t~; such as
+a witness to why you're returning truth --all non-nil values denote true after all.
+E.g., ~(member e xs)~ returns the sublist of ~xs~ that begins with ~e~.
+# Return more than just the truth!
+
+:Try_it_out:
+#+BEGIN_SRC emacs-lisp
+(member 1 '(2 1 3 5))
+#+END_SRC
+
+:End:
+
 * spacing vfill                                                     :ignore:
 \vfill
 
