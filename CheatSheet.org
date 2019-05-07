@@ -56,8 +56,6 @@
 (describe-symbol 'describe-symbol)
 :End:
 
-
-
 * Functions
 
 + Function invocation: ~(f x₀ x₁ … xₙ)~. E.g., ~(+ 3 4)~ or ~(message "hello")~.
@@ -268,8 +266,9 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
   
   We can coerce a statement ~sᵢ~ to returning non-~nil~ as so: (~progn sᵢ t)~.
   Likewise, coerce failure by ~(progn sᵢ nil)~.
-
+  
 :TryItOut:
+#+BEGIN_SRC emacs-lisp
 (and 
   (message "hello")
   (progn (sleep-for 0 500) t)
@@ -298,9 +297,11 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
     (message "bye")  
   ) 
 )
+#+END_SRC
+
 :End:
 
-+ Jumps, Control-flow transfer: Perform multiple statements and decide when and where you would like to stop.
++ Jumps, Control-flow transfer: Perform multiple statements and decide when and where you would like to stop. This' akin to C's ~goto~'s; declare a label with ~catch~ and goto it with ~throw~.
   - ~(catch 'my-jump bodyBlock)~ where the body may contain ~(throw 'my-jump returnValue)~;
   the value of the catch/throw is then ~returnValue~.
   - Useful for when the ~bodyBlock~ is, say, a loop.
@@ -313,6 +314,13 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
     --as well as ‘early exits’.
   - Simple law: ~(catch 'it s₀ s₁ … sₖ (throw 'it r) sₖ₊₁ ⋯ sₖ₊ₙ) ≈ (progn s₀ s₁ ⋯ sₖ r)~.
     * Provided the ~sᵢ~ are simple function application forms.
+
++ ~and, or~ can be thought of as instance of catch/throw, whence they are control flow
+  first and Boolean operations second.
+    #+BEGIN_SRC emacs-lisp
+  (and s₀ ⋯ sₙ e)  ⇒  when all xᵢ are true, do e
+  (or  s₀ ⋯ sₙ e)  ⇒  when no xᵢ is true, do e
+#+END_SRC
 
 * List Manipulation
 
@@ -357,8 +365,10 @@ may be construed:
 + ~(if condition thenExpr optionalElseBlock)~
   - Note: ~(if x y) ≈ (if x y nil)~; better: ~(when c thenBlock) ≈ (if c (progn thenBlock))~.
   - Note the else-clause is a ‘block’: Everything after the then-clause is considered to be part of it.  
-
-+ Avoid nested if-then-else clauses by using a ~cond~ statement --a generalisation of switch statements.  
+  - ~(if xs ⋯)~ means “if xs is nonempty then ⋯” is akin to C style idioms on
+    linked lists.
+    
++ Avoid nested if-then-else clauses by using a ~cond~ statement --a (lazy) generalisation of switch statements.  
    #+BEGIN_SRC emacs-lisp
 (cond
   (test₀
@@ -381,6 +391,16 @@ may be construed:
   (otherwise "You're a stranger!"))
 #+END_SRC
    With case you can use either ~t~ or ~otherwise~ for the default case, but it must come last.
+
+:Try_it_out:   
+#+BEGIN_SRC emacs-lisp
+(cond
+  (t (message "first"))
+  ((/ 2 0) (message "crash"))
+)
+#+END_SRC
+:End:
+
 * spacing vfill                                                     :ignore:
 \vfill
 
