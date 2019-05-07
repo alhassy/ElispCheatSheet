@@ -168,7 +168,7 @@ my-x ;; ⇒ now 16
    # let ≈ parallel; let* ≈ sequential. 
 
 + Any sequence of symbols is a valid identifier, including ~x, x-y/z, --<<==>>--~
-  and even ~∀∃~.
+  and even ~∀∃~. Elisp names are case sensitive.
   :Try_it_out:
 #+BEGIN_SRC emacs-lisp
 (setq ∀∃ 23)
@@ -179,9 +179,12 @@ my-x ;; ⇒ now 16
 
 (eq '∀∃ '--<<==>>--) ;; false 
 (eq '∀∃ '∀∃)         ;; true
+
+;; Elisp names are case sensitive 
+(eq 'foobar 'fOoBaR) ;; ⇒ false
 #+END_SRC
 :End:
-
+  
 + Elisp is dynamically scoped: The caller's stack is accessible by default!
   #+BEGIN_SRC emacs-lisp
 (defun woah () 
@@ -205,6 +208,8 @@ Useful for loops, among other things:
 | ~x += y~ | ~(incf x y)~ |
 | ~x--~    | ~(decf x)~   |
 | ~x++~    | ~(incf x)~   |
+
+* Quotes, Quasi-Quotes, and Unquotes
 
 + Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
   - This is superficially similar to pointers:
@@ -237,8 +242,54 @@ Useful for loops, among other things:
 
 \room
 
-Elisp expressions are either atoms or function application --nothing else!
+/Elisp expressions are either atoms or function application --nothing else!/
 
+\room
+
+An English sentence is a list of words; if we want to make a sentence where some of
+the words are parameters, then we use a quasi-quote --it's like a quote, but allows
+us to evaluate data if we prefix it with a comma. It's usually the case that the
+quasi-quoted sentence happens to be a function call! In which case, we use ~eval~
+which executes code that is in data form; i.e., is quoted.
+
+\room
+Macros are essentially functions that return sentences, lists, which may happen to
+contain code.
+
+# :Try_it_out:
+#+BEGIN_SRC emacs-lisp
+'(I am a sentence)   ;; quote 
+'(+ 1 (+ 1 1))       ;; another sentence; data
+
+(setq name "Musa")
+`(Hello ,name It is a pleasure to meet you) ;; Quasi-quote
+`(+ 1 ,(+ 1 1))             ;; sentence with a computation, code, in it
+
+'(+ 1 2)        ;; ⇒ '(+ 1 2)
+(eval '(+ 1 2)) ;; ⇒ 3
+#+END_SRC
+# :End:
+
+As the final example shows, Lisp treats data and code interchangeably.
+A language that uses the same structure to store data and code is called ‘homoiconic’.
+
+* Printing
+
+  Lisp makes writing a REPL astonishingly easy: “Loop as follows: Print the result
+  of evaluating what is read at the prompt.”
+#+BEGIN_SRC emacs-lisp
+  (loop (print (eval (read))))  ;; Beautiful (•̀ᴗ•́)و
+
+  (defun my-safe-repl () ;; Run repl until user types “quit”.
+   (let ((cmd (read)))
+     (unless (equal cmd 'quit)
+       (print (eval cmd))
+       (my-safe-repl))
+   ))
+#+END_SRC
+
+ + ~loop~ merely loops forever.
+   
 * spacing newpage                                                    :ignore:
 \newpage
 * Block of Code
@@ -410,7 +461,6 @@ E.g., ~(member e xs)~ returns the sublist of ~xs~ that begins with ~e~.
 #+BEGIN_SRC emacs-lisp
 (member 1 '(2 1 3 5))
 #+END_SRC
-
 :End:
 
 * spacing vfill                                                     :ignore:
