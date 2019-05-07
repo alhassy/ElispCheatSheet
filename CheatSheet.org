@@ -4,7 +4,7 @@
 # f8 commit each change
 # f9 push changes
 
-* Header                                                      :do:not:ignore:
+* Header                                                     :ignore:
 #+TITLE: Elisp Reference Sheet
 # SUBTITLE: Cheat Sheet Template
 # DATE: << Winter 2019 >>
@@ -20,7 +20,7 @@
 #+OPTIONS: d:nil
 #+INCLUDE: CheatSheet/CheatSheetSetup.org
 
-* LaTeX Setup                                       :ignore:Needs_to_be_here:
+* LaTeX Setup                                                :ignore:
 # Can be obtained from: https://github.com/alhassy/MyUnicodeSymbols
 #
 #+LATEX_HEADER: \usepackage{/Users/musa/MyUnicodeSymbols/MyUnicodeSymbols}
@@ -55,6 +55,7 @@
 (describe-symbol 'eldoc-mode)
 (describe-symbol 'describe-symbol)
 :End:
+
 
 
 * Functions
@@ -167,6 +168,21 @@ my-x ;; ⇒ now 16
   - ~let*~ permits later bindings to refer to earlier ones.
   - The simpler ~let~ indicates to the reader that there are no dependencies between the variables.
    # let ≈ parallel; let* ≈ sequential. 
+
++ Any sequence of symbols is a valid identifier, including ~x, x-y/z, --<<==>>--~
+  and even ~∀∃~.
+  :Try_it_out:
+#+BEGIN_SRC emacs-lisp
+(setq ∀∃ 23)
+(message (format "%s" ∀∃))
+
+(setq --<<==>>-- 23)
+(message (format "%s" --<<==>>--))
+
+(eq '∀∃ '--<<==>>--) ;; false 
+(eq '∀∃ '∀∃)         ;; true
+#+END_SRC
+:End:
 
 + Elisp is dynamically scoped: The caller's stack is accessible by default!
   #+BEGIN_SRC emacs-lisp

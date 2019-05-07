@@ -15,16 +15,16 @@ This reference sheet is built around the system
 
 # Table of Contents
 
-1.  [Functions](#org99142be)
-2.  [Variables](#orgf31b6b3)
-3.  [Block of Code](#org9016b55)
-4.  [List Manipulation](#org4cb314a)
-5.  [Conditionals](#orgcffdc6d)
-6.  [Exception Handling](#orga1466fe)
-7.  [Loops](#orgf2033ac)
-8.  [Records](#orgb5a542d)
-9.  [Macros](#org58094df)
-10. [Reads](#org3070859)
+1.  [Functions](#org56f6e0d)
+2.  [Variables](#org4c3f9cf)
+3.  [Block of Code](#org51d4531)
+4.  [List Manipulation](#org844bbc1)
+5.  [Conditionals](#org91a4c18)
+6.  [Exception Handling](#org8d298af)
+7.  [Loops](#orgd7321a5)
+8.  [Records](#orgf3ff932)
+9.  [Macros](#orge2a40c1)
+10. [Reads](#orga023e18)
 
 
 
@@ -47,7 +47,7 @@ This reference sheet is built around the system
     `describe-mode`. Essentially a comprehensive yet terse reference is provided.
 
 
-<a id="org99142be"></a>
+<a id="org56f6e0d"></a>
 
 # Functions
 
@@ -102,7 +102,7 @@ This reference sheet is built around the system
 \newpage
 
 
-<a id="orgf31b6b3"></a>
+<a id="org4c3f9cf"></a>
 
 # Variables
 
@@ -197,7 +197,7 @@ Elisp expressions are either atoms or function application &#x2013;nothing else!
 \newpage
 
 
-<a id="org9016b55"></a>
+<a id="org51d4531"></a>
 
 # Block of Code
 
@@ -244,7 +244,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
         -   Provided the `sᵢ` are simple function application forms.
 
 
-<a id="org4cb314a"></a>
+<a id="org844bbc1"></a>
 
 # List Manipulation
 
@@ -278,7 +278,7 @@ may be construed:
     (describe-symbol 'remove-if-not) ;; “filter” ;-)
 
 
-<a id="orgcffdc6d"></a>
+<a id="org91a4c18"></a>
 
 # Conditionals
 
@@ -319,7 +319,7 @@ may be construed:
 \vfill
 
 
-<a id="orga1466fe"></a>
+<a id="org8d298af"></a>
 
 # Exception Handling
 
@@ -334,7 +334,7 @@ We can attempt a dangerous clause and catch a possible exceptional case
     (ignore-errors (+ 1 "nope")) ;; ⇒ nil
 
 
-<a id="orgf2033ac"></a>
+<a id="orgd7321a5"></a>
 
 # Loops
 
@@ -404,7 +404,7 @@ and Java do-while loops. I personally prefer functional programming, so wont
 look into this much.
 
 
-<a id="orgb5a542d"></a>
+<a id="orgf3ff932"></a>
 
 # Records
 
@@ -433,7 +433,7 @@ look into this much.
     (book-title ladm) ;; ⇒ "LADM"
 
 
-<a id="org58094df"></a>
+<a id="orge2a40c1"></a>
 
 # Macros
 
@@ -544,7 +544,7 @@ Macros let us add new syntax, like `let1` for single lets:
 \vfill
 
 
-<a id="org3070859"></a>
+<a id="orga023e18"></a>
 
 # Reads
 
