@@ -1045,30 +1045,61 @@ is initialised with org-mode.
 * spacing vfill                                                     :ignore:
 \vfill
 
-* COMMENT Printing
+* ~read~ and ~print~
 
-  Lisp makes writing a REPL astonishingly easy: “Loop as follows: Print the result
-  of evaluating what is read at the prompt.”
+‘Reading’ means parsing an expression in textual form and producing a lisp object.
+E.g., this is a way to load a lisp file. ‘Printing’ a lisp object mean producing
+a textual representation. These operations, in lisp, are mostly inverse.
+
+\room
+The ~read-from-string~ command works just like the ~read~ command, but 
+lets us read a lisp object from a string instead of directly from the console.
+
 #+BEGIN_SRC emacs-lisp
-  (loop (print (eval (read))))  ;; Beautiful (•̀ᴗ•́)و
+(defun sum-two ()
+  (let (fst snd)
+    (setq fst (read))
+    (setq snd (read))
+    (+ (eval fst) (eval snd))
+  )
+)
 
-  (defun my-safe-repl () ;; Run repl until user types “quit”.
-   (let ((cmd (read)))
-     (unless (equal cmd 'quit)
-       (print (eval cmd))
-       (my-safe-repl))
-   ))
+;; Run (sum-two) with inputs (+ 1 2) and (* 3 4)  ;-)
+#+END_SRC
+  
+Lisp makes writing a REPL astonishingly easy: “Loop as follows:
+Print the result of evaluating what is read at the prompt.”
+#+BEGIN_SRC emacs-lisp
+(loop (print (eval (read))))  ;; Beautiful (•̀ᴗ•́)و
 #+END_SRC
 
  + ~loop~ merely loops forever.
- + The ~print~ and ~read~ commands work on all kinds of data, such as lists of data
+
+ The ~print~ and ~read~ commands work on all kinds of data, such as lists of data
    structures. Hence, we must use quotes if we want to read a string rather than a
    symbol, for example.
- + They operate at the console level and are honest inverses of each other.
- 
+
+\room   
+A major problem with this REPL is that ~eval~ executes any, potentially malicious,
+Lisp command entered by the user. Ideally one checks the read lisp object is
+safe ---say, it is one of some allowable commands--- and only then evaluates it.
+:A_safer_repl:
 #+BEGIN_SRC emacs-lisp
-(insert (read))
+(defun f () (message-box "f was called"))
+(defun g () (message-box "g was called"))
+(defun h () (message-box "h was called"))
+(setq safe-commands '(f g h))
+
+;; This reply can only execute: (f), (g), (h), quit
+(catch 'quit
+(loop
+  (let ((sexp (read)))
+    (when (equal sexp 'quit) (throw 'quit "byebye"))
+    (if (member (car sexp) safe-commands)
+        (eval sexp)
+	'(I do not know that command)))))
 #+END_SRC
+:End:
  
 * COMMENT Making README.md
 

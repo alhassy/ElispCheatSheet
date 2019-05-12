@@ -15,19 +15,20 @@ This reference sheet is built around the system
 
 # Table of Contents
 
-1.  [Functions](#org58e0a3a)
-2.  [Variables](#org810c667)
-3.  [Reads](#orge30a4e3)
-4.  [Quotes, Quasi-Quotes, and Unquotes](#org4e431d0)
-5.  [Lists and List-Like Structures](#org2e2fc07)
-6.  [Generic Setters](#org6608b64)
-7.  [Records](#org8905e02)
-8.  [Block of Code](#orgbaf9b94)
-9.  [Conditionals](#orgee9c08a)
-10. [Exception Handling](#orgaefc31c)
-11. [Loops](#org00aeddc)
-12. [Types & Overloading](#org7825ef6)
-13. [Macros](#org0642b22)
+1.  [Functions](#org3ce0c46)
+2.  [Variables](#org6e78d20)
+3.  [Reads](#org4c068ff)
+4.  [Quotes, Quasi-Quotes, and Unquotes](#org0e60a9d)
+5.  [Lists and List-Like Structures](#org7e9f281)
+6.  [Generic Setters](#orgef4515e)
+7.  [Records](#org9b649dd)
+8.  [Block of Code](#org962ff19)
+9.  [Conditionals](#orgd82c8ff)
+10. [Exception Handling](#org717aa49)
+11. [Loops](#org231c3d2)
+12. [Types & Overloading](#org1368395)
+13. [Macros](#org9c99e9f)
+14. [`read` and `print`](#orgaaebdfe)
 
 
 
@@ -50,7 +51,7 @@ This reference sheet is built around the system
     `describe-mode`. Essentially a comprehensive yet terse reference is provided.
 
 
-<a id="org58e0a3a"></a>
+<a id="org3ce0c46"></a>
 
 # Functions
 
@@ -127,7 +128,7 @@ Un-supplied optional arguments are bound to `nil`.
 Keywords begin with a colon, `:k` is a constant whose value is `:k`.
 
 
-<a id="org810c667"></a>
+<a id="org6e78d20"></a>
 
 # Variables
 
@@ -164,7 +165,7 @@ Keywords begin with a colon, `:k` is a constant whose value is `:k`.
         ;; (add-one 2) ⇒ 666
 
 
-<a id="orge30a4e3"></a>
+<a id="org4c068ff"></a>
 
 # Reads
 
@@ -177,7 +178,7 @@ Keywords begin with a colon, `:k` is a constant whose value is `:k`.
 \newpage
 
 
-<a id="org4e431d0"></a>
+<a id="org0e60a9d"></a>
 
 # Quotes, Quasi-Quotes, and Unquotes
 
@@ -236,7 +237,7 @@ As the final example shows, Lisp treats data and code interchangeably.
 A language that uses the same structure to store data and code is called ‘homoiconic’.
 
 
-<a id="org2e2fc07"></a>
+<a id="org7e9f281"></a>
 
 # Lists and List-Like Structures
 
@@ -299,7 +300,7 @@ What if you look up a key and get `nil`, is there no value for that key or is th
 key is not found; it is `nil` by default.
 
 
-<a id="org6608b64"></a>
+<a id="orgef4515e"></a>
 
 # Generic Setters
 
@@ -317,7 +318,7 @@ Hence, once you have a getter `G` you freely obtain a setter `(setf G ⋯)`.
     (nth 99 y) ;; ⇒ a
 
 
-<a id="org8905e02"></a>
+<a id="org9b649dd"></a>
 
 # Records
 
@@ -353,7 +354,7 @@ Advanced OOP constructs can be found within the CLOS, Common Lisp Object System;
 which is also used as a research tool for studying OOP ideas.
 
 
-<a id="orgbaf9b94"></a>
+<a id="org962ff19"></a>
 
 # Block of Code
 
@@ -406,7 +407,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
         (or  s₀ ⋯ sₙ e)  ⇒  when no xᵢ is true, do e
 
 
-<a id="orgee9c08a"></a>
+<a id="orgd82c8ff"></a>
 
 # Conditionals
 
@@ -457,7 +458,7 @@ E.g., `(member e xs)` returns the sublist of `xs` that begins with `e`.
 \vfill
 
 
-<a id="orgaefc31c"></a>
+<a id="org717aa49"></a>
 
 # Exception Handling
 
@@ -472,7 +473,7 @@ We can attempt a dangerous clause and catch a possible exceptional case
     (ignore-errors (+ 1 "nope")) ;; ⇒ nil
 
 
-<a id="org00aeddc"></a>
+<a id="org231c3d2"></a>
 
 # Loops
 
@@ -561,7 +562,7 @@ and Java do-while loops. I personally prefer functional programming, so wont
 look into this much.
 
 
-<a id="org7825ef6"></a>
+<a id="org1368395"></a>
 
 # Types & Overloading
 
@@ -606,7 +607,7 @@ remember. The following generic functions work on lists, arrays, and strings:
 \newpage
 
 
-<a id="org0642b22"></a>
+<a id="org9c99e9f"></a>
 
 # Macros
 
@@ -714,4 +715,43 @@ Macros let us add new syntax, like `let1` for single lets:
     \room Exercise: Define `split`.
 
 \vfill
+
+
+<a id="orgaaebdfe"></a>
+
+# `read` and `print`
+
+‘Reading’ means parsing an expression in textual form and producing a lisp object.
+E.g., this is a way to load a lisp file. ‘Printing’ a lisp object mean producing
+a textual representation. These operations, in lisp, are mostly inverse.
+
+\room
+The `read-from-string` command works just like the `read` command, but 
+lets us read a lisp object from a string instead of directly from the console.
+
+    (defun sum-two ()
+      (let (fst snd)
+        (setq fst (read))
+        (setq snd (read))
+        (+ (eval fst) (eval snd))
+      )
+    )
+    
+    ;; Run (sum-two) with inputs (+ 1 2) and (* 3 4)  ;-)
+
+Lisp makes writing a REPL astonishingly easy: “Loop as follows:
+Print the result of evaluating what is read at the prompt.”
+
+    (loop (print (eval (read))))  ;; Beautiful (•̀ᴗ•́)و
+
+-   `loop` merely loops forever.
+
+The `print` and `read` commands work on all kinds of data, such as lists of data
+  structures. Hence, we must use quotes if we want to read a string rather than a
+  symbol, for example.
+
+\room   
+A major problem with this REPL is that `eval` executes any, potentially malicious,
+Lisp command entered by the user. Ideally one checks the read lisp object is
+safe &#x2014;say, it is one of some allowable commands&#x2014; and only then evaluates it.
 
