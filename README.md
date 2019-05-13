@@ -15,20 +15,20 @@ This reference sheet is built around the system
 
 # Table of Contents
 
-1.  [Functions](#org3ce0c46)
-2.  [Variables](#org6e78d20)
-3.  [Reads](#org4c068ff)
-4.  [Quotes, Quasi-Quotes, and Unquotes](#org0e60a9d)
-5.  [Lists and List-Like Structures](#org7e9f281)
-6.  [Generic Setters](#orgef4515e)
-7.  [Records](#org9b649dd)
-8.  [Block of Code](#org962ff19)
-9.  [Conditionals](#orgd82c8ff)
-10. [Exception Handling](#org717aa49)
-11. [Loops](#org231c3d2)
-12. [Types & Overloading](#org1368395)
-13. [Macros](#org9c99e9f)
-14. [`read` and `print`](#orgaaebdfe)
+1.  [Functions](#org7a642bd)
+2.  [Variables](#orgc1a2678)
+3.  [Reads](#org8682eee)
+4.  [Quotes, Quasi-Quotes, and Unquotes](#orgab18f4f)
+5.  [Lists and List-Like Structures](#org8135bd2)
+6.  [Generic Setters](#org894a44e)
+7.  [Records](#orgf1474d4)
+8.  [Block of Code](#org8ba7097)
+9.  [Conditionals](#org98fbfcf)
+10. [Exception Handling](#org80f9253)
+11. [Loops](#orgefe67c2)
+12. [Types & Overloading](#org0a847e8)
+13. [Macros](#orga2f9442)
+14. [`read` and `print`](#org9184651)
 
 
 
@@ -51,7 +51,7 @@ This reference sheet is built around the system
     `describe-mode`. Essentially a comprehensive yet terse reference is provided.
 
 
-<a id="org3ce0c46"></a>
+<a id="org7a642bd"></a>
 
 # Functions
 
@@ -128,7 +128,7 @@ Un-supplied optional arguments are bound to `nil`.
 Keywords begin with a colon, `:k` is a constant whose value is `:k`.
 
 
-<a id="org6e78d20"></a>
+<a id="orgc1a2678"></a>
 
 # Variables
 
@@ -137,12 +137,15 @@ Keywords begin with a colon, `:k` is a constant whose value is `:k`.
     -   Generally: `(setq name₀ value₀ ⋯ nameₖ valueₖ)`.
     
     Use `devfar` for global variables since it
-    permits a documentation string &#x2013;but updates must be performed with `setq.
-      E.g., ~(defvar my-x 14 "my cool thing")`.
+    permits a documentation string &#x2013;but updates must be performed with `setq`.
+    E.g., `(defvar my-x 14 "my cool thing")`.
 
 -   Local Scope: `(let ((name₀ val₀) … (nameₖ valₖ)) bodyBlock)`.
     -   `let*` permits later bindings to refer to earlier ones.
     -   The simpler `let` indicates to the reader that there are no dependencies between the variables.
+    -   let ≈ parallel; let\* ≈ sequential.
+    -   Local functions declared with `flet` and `flet*`; e.g.,
+        `(flet ((go (x) (+ 2 x))) (go 3))`.
 
 -   Any sequence of symbols is a valid identifier, including `x, x-y/z, --<<==>>--`
     and even `∀∃`. Elisp names are case sensitive.
@@ -165,7 +168,7 @@ Keywords begin with a colon, `:k` is a constant whose value is `:k`.
         ;; (add-one 2) ⇒ 666
 
 
-<a id="org4c068ff"></a>
+<a id="org8682eee"></a>
 
 # Reads
 
@@ -178,7 +181,7 @@ Keywords begin with a colon, `:k` is a constant whose value is `:k`.
 \newpage
 
 
-<a id="org0e60a9d"></a>
+<a id="orgab18f4f"></a>
 
 # Quotes, Quasi-Quotes, and Unquotes
 
@@ -237,7 +240,7 @@ As the final example shows, Lisp treats data and code interchangeably.
 A language that uses the same structure to store data and code is called ‘homoiconic’.
 
 
-<a id="org7e9f281"></a>
+<a id="org8135bd2"></a>
 
 # Lists and List-Like Structures
 
@@ -300,7 +303,7 @@ What if you look up a key and get `nil`, is there no value for that key or is th
 key is not found; it is `nil` by default.
 
 
-<a id="orgef4515e"></a>
+<a id="org894a44e"></a>
 
 # Generic Setters
 
@@ -318,7 +321,7 @@ Hence, once you have a getter `G` you freely obtain a setter `(setf G ⋯)`.
     (nth 99 y) ;; ⇒ a
 
 
-<a id="org9b649dd"></a>
+<a id="orgf1474d4"></a>
 
 # Records
 
@@ -354,7 +357,7 @@ Advanced OOP constructs can be found within the CLOS, Common Lisp Object System;
 which is also used as a research tool for studying OOP ideas.
 
 
-<a id="org962ff19"></a>
+<a id="org8ba7097"></a>
 
 # Block of Code
 
@@ -407,7 +410,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
         (or  s₀ ⋯ sₙ e)  ⇒  when no xᵢ is true, do e
 
 
-<a id="orgd82c8ff"></a>
+<a id="org98fbfcf"></a>
 
 # Conditionals
 
@@ -458,7 +461,7 @@ E.g., `(member e xs)` returns the sublist of `xs` that begins with `e`.
 \vfill
 
 
-<a id="org717aa49"></a>
+<a id="org80f9253"></a>
 
 # Exception Handling
 
@@ -473,7 +476,7 @@ We can attempt a dangerous clause and catch a possible exceptional case
     (ignore-errors (+ 1 "nope")) ;; ⇒ nil
 
 
-<a id="org231c3d2"></a>
+<a id="orgefe67c2"></a>
 
 # Loops
 
@@ -562,7 +565,7 @@ and Java do-while loops. I personally prefer functional programming, so wont
 look into this much.
 
 
-<a id="org1368395"></a>
+<a id="org0a847e8"></a>
 
 # Types & Overloading
 
@@ -607,7 +610,7 @@ remember. The following generic functions work on lists, arrays, and strings:
 \newpage
 
 
-<a id="org9c99e9f"></a>
+<a id="orga2f9442"></a>
 
 # Macros
 
@@ -717,7 +720,7 @@ Macros let us add new syntax, like `let1` for single lets:
 \vfill
 
 
-<a id="orgaaebdfe"></a>
+<a id="org9184651"></a>
 
 # `read` and `print`
 
