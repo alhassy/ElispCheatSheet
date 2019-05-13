@@ -202,7 +202,8 @@ Keywords begin with a colon, ~:k~ is a constant whose value is ~:k~.
 
 * Quotes, Quasi-Quotes, and Unquotes
 
-+ Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
+Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
+
   - This is superficially similar to pointers:
     Given ~int *x = …~, ~x~ is the name (address)
     whereas ~*x~ is the value.
@@ -230,15 +231,20 @@ Keywords begin with a colon, ~:k~ is a constant whose value is ~:k~.
 (equal 'x ''x) ;; false
 #+END_SRC
 :End:
-    
-  Akin to English, quoting a word refers to the word and not what it denotes.
 
-  ( This lets us treat /code/ as /data/! E.g., ~'(+ 1 2)~ evaluates to ~(+ 1 2)~, a function call,
+  \room
+Akin to English, quoting a word refers to the word and not what it denotes.
+
+This lets us treat /code/ as /data/! E.g., ~'(+ 1 2)~ evaluates to ~(+ 1 2)~, a function call,
     not the value ~3~! Another example, ~*~ is code but ~'*~
-    is data, and so ~(funcall '* 2 4)~ yields 8. )
+    is data, and so ~(funcall '* 2 4)~ yields 8.
 
-+ /Atoms/ are the simplest objects in Elisp: They evaluate to themselves.
-  - E.g., ~5, "a", 2.78, 'hello~.
+\room
+
+/Elisp expressions are either atoms or function application --nothing else!/
+
+‘Atoms’ are the simplest objects in Elisp: They evaluate to themselves; \newline
+e.g., ~5, "a", 2.78, 'hello, [1 "two" three]~.
     :lambdas_are_not_literals:    
      lambda's form function literals in that, e.g.,
     ~(lambda (x) x)~ evaluates to itself.
@@ -247,11 +253,8 @@ Keywords begin with a colon, ~:k~ is a constant whose value is ~:k~.
     :End:
 
   # Reddit/skeeto: There are lots of types in Emacs Lisp that are "atoms" but not actually atomic: vectors, records, hash tables, etc.   
-    
-\room
 
-/Elisp expressions are either atoms or function application --nothing else!/
-
+  
 \room
 
 An English sentence is a list of words; if we want to make a sentence where some of
@@ -266,12 +269,12 @@ contain code.
 
 #+begin_parallel org
 #+BEGIN_SRC emacs-lisp
-;; Two quotes / sentences / data 
+;; Quotes / sentences / data 
 '(I am a sentence)
 '(+ 1 (+ 1 1))
 
-;; Executing data as code ⇒ 3
-(eval '(+ 1 (+ 1 1)))
+;; Executing data as code
+(eval '(+ 1 (+ 1 1)))  ;; ⇒ 3
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -280,7 +283,7 @@ contain code.
 ;; Quasi-quotes: Sentences with a
 ;; computation, code, in them.
 `(Hello ,name and welcome)
-`(+ 1 ,(+ 1 1))           
+`(+ 1 ,(+ 1 1))  ;; ⇒ '(+ 1 2)          
 #+END_SRC
 #+end_parallel
 
@@ -322,7 +325,7 @@ my-x ;; ⇒ now 16
 
   :End:
 
-  ~(setq x y) ≈ (set (quote x) y)~
+  | ~(setq x y) ≈ (set (quote x) y)~ |
   
   Variables are assigned with ~set~,
   which takes a quoted identifier, so that it's not evaluated,
@@ -632,10 +635,6 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
   - ~(if xs ⋯)~ means “if xs is nonempty then ⋯” is akin to C style idioms on
     linked lists.
     
-Avoid nested if-then-else clauses by using a ~cond~ statement --a (lazy) generalisation
-  of switch statements. Or make choices by comparing against /only/ numbers or symbols
-  ---e.g., not strings!-- with less clutter by using ~case~.
-
 #
 #+begin_parallel org  
 #+BEGIN_SRC emacs-lisp
@@ -663,12 +662,11 @@ Avoid nested if-then-else clauses by using a ~cond~ statement --a (lazy) general
 #+END_SRC
 #+end_parallel
 
-   ~cond~ sequentially evaluates the predicates ~testᵢ~ and performs only the action of the
-   first true test; yielding ~nil~ when no tests are true.
-   [[http://www.wilfred.me.uk/blog/2017/03/19/pattern-matching-in-emacs-lisp/][Pattern matching]] even allows predicates in the case position ---~C-h o~ ;-)
+Avoid nested if-then-else clauses by using a ~cond~ statement --a (lazy) generalisation
+of switch statements: It sequentially evaluates the expressions ~testᵢ~ and
+performs only the action of the first true test; yielding ~nil~ when no tests are true.
+Or use [[http://www.wilfred.me.uk/blog/2017/03/19/pattern-matching-in-emacs-lisp/][pattern matching]]; which even allows predicates in the case position ---~C-h o~ ;-)
    
-#   With ~case~ you can use either ~t~ or ~otherwise~ for the default case, but it must come last.
-
 :Try_it_out:   
 #+BEGIN_SRC emacs-lisp
 (cond
@@ -717,7 +715,7 @@ Let's sum the first ~100~ numbers in 3 ways.
 # dotimes is just a specfic while loop.
 # (insert (format "\n\n%s" (macroexpand '(dotimes (x l r) b))))
 
-Two instances of a while loop:
+# Two instances of a while loop:
 #+BEGIN_SRC elisp
 ;; Repeat body n times, where i is current iteration.
 (let ((result 0) (n 100))
@@ -730,8 +728,9 @@ Two instances of a while loop:
 
 In both loops, ~result~ is optional and defaults to nil.
 It is the return value of the loop expression.
-
-*Example of Above Constructs*
+#+latex: \vspace{-1em}
+| *Example of Above Constructs* |
+#+latex: \vspace{-1em}
 #+BEGIN_SRC emacs-lisp
 (defun my/cool-function (N D)
   "Sum the numbers 0..N that are not divisible by D"
@@ -742,14 +741,9 @@ It is the return value of the loop expression.
         (while 'true
           (catch 'continue
             (incf counter)
-            (cond
-              ((equal counter N)               
-                  (throw 'break sum))
-              ((zerop (% counter D))           
-                  (throw 'continue nil))
-              ('otherwise
-	          (incf sum counter))
-              )))))))
+            (cond ((equal counter N)       (throw 'break sum   ))
+                   ((zerop (% counter D))  (throw 'continue nil))
+                   ('otherwise             (incf sum counter   )) )))))))
 
 (my/cool-function  100 3)  ;; ⇒ 3267
 (my/cool-function  100 5)  ;; ⇒ 4000
@@ -780,7 +774,7 @@ We can attempt a dangerous clause and catch a possible exceptional case
 Since Lisp is dynamically typed, a variable can have any kind of data, possibly
 different kinds if data at different times in running a program.
 We can use ~type-of~ to get the type of a given value; suffixing that with ~p~
-gives the associated predicate; e.g., ~function ↦ functionp~.
+gives the associated predicate; \newline e.g., ~function ↦ functionp~.
 :More:
 The following predicates tell us what kind of data a variable
 has: ~numberp, arrayp, characterp,~
@@ -850,6 +844,8 @@ remember. The following generic functions work on lists, arrays, and strings:
 
 [[https://github.com/magnars/dash.el][dash]] is a modern list library for Emacs that uses Haskell-like names for list operations ;-)
 Likewise, [[https://github.com/magnars/s.el][s]] is a useful Emacs string manipulation library.
+
+In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensions using Haskell directly]].
 
 * spacing  newpage                                          :ignore:
 \newpage
@@ -927,8 +923,9 @@ Likewise, [[https://github.com/magnars/s.el][s]] is a useful Emacs string manipu
       the contents of which may be inserted in place, not as a list, using the
       [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html][ ~,@~ splice comma]]  --we need to ensure there's a ~progn~.
 
-       # Use list elements in-place:
-        ~`(pre ,@(list s₀ ⋯ sₙ) post) ≈ `(pre s₀ ⋯ sₙ post)~.
+       Use list elements in-place:
+       #+latex: \vspace{-1em}
+       | ~`(pre ,@(list s₀ ⋯ sₙ) post) ≈ `(pre s₀ ⋯ sₙ post)~ |
        #
        # This works:  `(pre ,@'(s0 ⋯ sn) post)
        #             ≈ '(pre s0 ⋯ sn post)
@@ -1116,7 +1113,7 @@ lets us read a lisp object from a string instead of directly from the console.
 Lisp makes writing a REPL astonishingly easy: “Loop as follows:
 Print the result of evaluating what is read at the prompt.”
 #+BEGIN_SRC emacs-lisp
-(loop (print (eval (read))))  ;; Beautiful (•̀ᴗ•́)و
+(loop (print (eval (read))))  ;; Beautiful ♥‿♥
 #+END_SRC
 
  + ~loop~ merely loops forever.

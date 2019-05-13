@@ -15,20 +15,20 @@ This reference sheet is built around the system
 
 # Table of Contents
 
-1.  [Functions](#org7a642bd)
-2.  [Variables](#orgc1a2678)
-3.  [Reads](#org8682eee)
-4.  [Quotes, Quasi-Quotes, and Unquotes](#orgab18f4f)
-5.  [Lists and List-Like Structures](#org8135bd2)
-6.  [Generic Setters](#org894a44e)
-7.  [Records](#orgf1474d4)
-8.  [Block of Code](#org8ba7097)
-9.  [Conditionals](#org98fbfcf)
-10. [Exception Handling](#org80f9253)
-11. [Loops](#orgefe67c2)
-12. [Types & Overloading](#org0a847e8)
-13. [Macros](#orga2f9442)
-14. [`read` and `print`](#org9184651)
+1.  [Functions](#org61572dd)
+2.  [Quotes, Quasi-Quotes, and Unquotes](#org5cbc551)
+3.  [Reads](#org4794cff)
+4.  [Variables](#orga0865d5)
+5.  [Lists and List-Like Structures](#org2b9909a)
+6.  [Generic Setters](#org13883a3)
+7.  [Records](#org6ff9f39)
+8.  [Block of Code](#orgef31da4)
+9.  [Conditionals](#org9504d16)
+10. [Loops](#org455b24d)
+11. [Exception Handling](#orgfb6adff)
+12. [Types & Overloading](#orgccb05e3)
+13. [Macros](#orgff22dde)
+14. [`read` and `print`](#org624f722)
 
 
 
@@ -51,7 +51,7 @@ This reference sheet is built around the system
     `describe-mode`. Essentially a comprehensive yet terse reference is provided.
 
 
-<a id="org7a642bd"></a>
+<a id="org61572dd"></a>
 
 # Functions
 
@@ -66,7 +66,7 @@ This reference sheet is built around the system
 -   Function definition:
     
         ;; “de”fine “fun”ctions
-        (defun my-fun (arg₀ arg₁ … argₖ)         ;; header, signature
+        (defun my-fun (arg₀ arg₁ … argₖ)        ;; header, signature
           "This functions performs task …"       ;; documentation, optional
           …sequence of instructions to perform…  ;; body
         )
@@ -76,25 +76,29 @@ This reference sheet is built around the system
 
 -   Anonymous functions: `(lambda (arg₀ … argₖ) bodyHere)`.
     
-        ;; make and immediately invoke
-        ((lambda (x y) (message (format "x, y ≈ %s, %s" x y))) 1 2)
-        
+    <div class="parallel">
         ;; make then way later invoke
-        (setq my-func (lambda (x y) (message (format "x, y ≈ %s, %s" x y))))
-        (funcall my-func 1 2)
+        (setq my-f (lambda (x y) (+ x y)))
+        (funcall my-f 1 2)
         ;; (my-func 1 2) ;; invalid!
+    
+    \columnbreak
+    
+        ;; make and immediately invoke
+        (funcall (lambda (x y) (+ x y)) 1 2)
+         ;; works, but is deprecated
+        ((lambda (x y) (+ x y)) 1 2)
+    
+    </div>
     
     The last one is invalid since `(f x0 … xk)` is only meaningful for functions
     `f` formed using `defun`. More honestly, Elisp has distinct namespaces for functions and variables.
-    
-    Indeed, `(defun f (x₀ … xₖ) body) ≈ (fset 'f (lambda (x₀ … xₖ) body))`.
-    
-    -   Using `fset`, with quoted name, does not require using `funcall`.
 
--   Functions are first-class values; the function represented by the name *f* is obtained
-    by the call `#'f`.
+\room
+Functions are first-class values; the function represented by the name *f* is obtained
+  by the call `#'f`.
 
-    ;; Recursion with the ‘tri’angle numbers: tri n = Σ [0..n].
+    ;; Recursion with the ‘tri’angle numbers: tri n = sum [0..n].
     (defun tri (f n) (if (<= n 0) 0 (+ (funcall f n) (tri f (- n 1)))))
     (tri #'identity 100)           ;; ⇒ 5050
     (tri (lambda (x) (/ x 2)) 100) ;; ⇒ 2500
@@ -128,7 +132,77 @@ Un-supplied optional arguments are bound to `nil`.
 Keywords begin with a colon, `:k` is a constant whose value is `:k`.
 
 
-<a id="orgc1a2678"></a>
+<a id="org5cbc551"></a>
+
+# Quotes, Quasi-Quotes, and Unquotes
+
+Quotes: `'x` refers to the *name* rather than the *value* of `x`.
+
+-   This is superficially similar to pointers:
+    Given `int *x = …`, `x` is the name (address)
+    whereas `*x` is the value.
+-   The quote simply forbids evaluation; it means *take it literally as you see it*
+    rather than looking up the definition and evaluating.
+-   Note: `'x ≈ (quote x)`.
+
+  \room
+Akin to English, quoting a word refers to the word and not what it denotes.
+
+This lets us treat *code* as *data*! E.g., `'(+ 1 2)` evaluates to `(+ 1 2)`, a function call,
+    not the value `3`! Another example, `*` is code but `'*`
+    is data, and so `(funcall '* 2 4)` yields 8.
+
+\room
+
+*Elisp expressions are either atoms or function application &#x2013;nothing else!*
+
+‘Atoms’ are the simplest objects in Elisp: They evaluate to themselves; \newline
+e.g., `5, "a", 2.78, 'hello, [1 "two" three]`.
+
+\room
+
+An English sentence is a list of words; if we want to make a sentence where some of
+the words are parameters, then we use a quasi-quote &#x2013;it's like a quote, but allows
+us to evaluate data if we prefix it with a comma. It's usually the case that the
+quasi-quoted sentence happens to be a function call! In which case, we use `eval`
+which executes code that is in data form; i.e., is quoted.
+
+\room
+Macros are essentially functions that return sentences, lists, which may happen to
+contain code.
+
+<div class="parallel">
+    ;; Quotes / sentences / data 
+    '(I am a sentence)
+    '(+ 1 (+ 1 1))
+    
+    ;; Executing data as code
+    (eval '(+ 1 (+ 1 1)))  ;; ⇒ 3
+
+    (setq name "Jasim")
+    
+    ;; Quasi-quotes: Sentences with a
+    ;; computation, code, in them.
+    `(Hello ,name and welcome)
+    `(+ 1 ,(+ 1 1))  ;; ⇒ '(+ 1 2)          
+
+</div>
+
+As the final example shows, Lisp treats data and code interchangeably.
+A language that uses the same structure to store data and code is called ‘homoiconic’.
+
+
+<a id="org4794cff"></a>
+
+# Reads
+
+-   [How to Learn Emacs: A Hand-drawn One-pager for Beginners / A visual tutorial](http://sachachua.com/blog/wp-content/uploads/2013/05/How-to-Learn-Emacs-v2-Large.png)
+-   [Learn Emacs Lisp in 15 minutes](https://emacs-doctor.com/learn-emacs-lisp-in-15-minutes.html) &#x2014; <https://learnxinyminutes.com/>
+-   [An Introduction to Programming in Emacs Lisp](https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top)  [Land of Lisp](http://landoflisp.com/)
+-   [GNU Emacs Lisp Reference Manual](https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top)
+
+
+<a id="orga0865d5"></a>
 
 # Variables
 
@@ -139,6 +213,25 @@ Keywords begin with a colon, `:k` is a constant whose value is `:k`.
     Use `devfar` for global variables since it
     permits a documentation string &#x2013;but updates must be performed with `setq`.
     E.g., `(defvar my-x 14 "my cool thing")`.
+    
+    <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+    
+    
+    <colgroup>
+    <col  class="org-left" />
+    </colgroup>
+    <tbody>
+    <tr>
+    <td class="org-left">`(setq x y) ≈ (set (quote x) y)`</td>
+    </tr>
+    </tbody>
+    </table>
+    
+    Variables are assigned with `set`,
+    which takes a quoted identifier, so that it's not evaluated,
+    and a value to associate to that variable. “set quoted”, `setq`,
+    avoids the hassle of quoting the name.
+    More generally, `(set sym v)` assigns the *value of* `sym` to have the value `v`.
 
 -   Local Scope: `(let ((name₀ val₀) … (nameₖ valₖ)) bodyBlock)`.
     -   `let*` permits later bindings to refer to earlier ones.
@@ -168,79 +261,7 @@ Keywords begin with a colon, `:k` is a constant whose value is `:k`.
         ;; (add-one 2) ⇒ 666
 
 
-<a id="org8682eee"></a>
-
-# Reads
-
--   [How to Learn Emacs: A Hand-drawn One-pager for Beginners / A visual tutorial](http://sachachua.com/blog/wp-content/uploads/2013/05/How-to-Learn-Emacs-v2-Large.png)
--   [Learn Emacs Lisp in 15 minutes](https://emacs-doctor.com/learn-emacs-lisp-in-15-minutes.html) &#x2014; <https://learnxinyminutes.com/>
--   [An Introduction to Programming in Emacs Lisp](https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top)
--   [GNU Emacs Lisp Reference Manual](https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top)
--   [Land of Lisp](http://landoflisp.com/)
-
-\newpage
-
-
-<a id="orgab18f4f"></a>
-
-# Quotes, Quasi-Quotes, and Unquotes
-
--   Quotes: `'x` refers to the *name* rather than the *value* of `x`.
-    -   This is superficially similar to pointers:
-        Given `int *x = …`, `x` is the name (address)
-        whereas `*x` is the value.
-    -   The quote simply forbids evaluation; it means *take it literally as you see it*
-        rather than looking up the definition and evaluating.
-    -   Note: `'x ≈ (quote x)`.
-
-Akin to English, quoting a word refers to the word and not what it denotes.
-
-( This lets us treat *code* as *data*! E.g., `'(+ 1 2)` evaluates to `(+ 1 2)`, a function call,
-  not the value `3`! Another example, `*` is code but `'*`
-  is data, and so `(funcall '* 2 4)` yields 8. )
-
--   *Atoms* are the simplest objects in Elisp: They evaluate to themselves.
-    -   E.g., `5, "a", 2.78, 'hello`, lambda's form function literals in that, e.g.,
-        `(lambda (x) x)` evaluates to itself.
-
-\room
-
-*Elisp expressions are either atoms or function application &#x2013;nothing else!*
-
-\room
-
-An English sentence is a list of words; if we want to make a sentence where some of
-the words are parameters, then we use a quasi-quote &#x2013;it's like a quote, but allows
-us to evaluate data if we prefix it with a comma. It's usually the case that the
-quasi-quoted sentence happens to be a function call! In which case, we use `eval`
-which executes code that is in data form; i.e., is quoted.
-
-\room
-Macros are essentially functions that return sentences, lists, which may happen to
-contain code.
-
-<div class="parallel">
-    ;; Two quotes / sentences / data 
-    '(I am a sentence)
-    '(+ 1 (+ 1 1))
-    
-    ;; Executing data as code ⇒ 3
-    (eval '(+ 1 (+ 1 1)))
-
-    (setq name "Jasim")
-    
-    ;; Quasi-quotes: Sentences with a
-    ;; computation, code, in them.
-    `(Hello ,name and welcome)
-    `(+ 1 ,(+ 1 1))           
-
-</div>
-
-As the final example shows, Lisp treats data and code interchangeably.
-A language that uses the same structure to store data and code is called ‘homoiconic’.
-
-
-<a id="org8135bd2"></a>
+<a id="org2b9909a"></a>
 
 # Lists and List-Like Structures
 
@@ -303,7 +324,7 @@ What if you look up a key and get `nil`, is there no value for that key or is th
 key is not found; it is `nil` by default.
 
 
-<a id="org894a44e"></a>
+<a id="org13883a3"></a>
 
 # Generic Setters
 
@@ -320,8 +341,10 @@ Hence, once you have a getter `G` you freely obtain a setter `(setf G ⋯)`.
     ;; “#2” means repeat from index 2.
     (nth 99 y) ;; ⇒ a
 
+\newpage
 
-<a id="orgf1474d4"></a>
+
+<a id="org6ff9f39"></a>
 
 # Records
 
@@ -357,7 +380,7 @@ Advanced OOP constructs can be found within the CLOS, Common Lisp Object System;
 which is also used as a research tool for studying OOP ideas.
 
 
-<a id="org8ba7097"></a>
+<a id="orgef31da4"></a>
 
 # Block of Code
 
@@ -410,7 +433,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
         (or  s₀ ⋯ sₙ e)  ⇒  when no xᵢ is true, do e
 
 
-<a id="org98fbfcf"></a>
+<a id="org9504d16"></a>
 
 # Conditionals
 
@@ -426,10 +449,6 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
     -   `(if xs ⋯)` means “if xs is nonempty then ⋯” is akin to C style idioms on
         linked lists.
 
-Avoid nested if-then-else clauses by using a `cond` statement &#x2013;a (lazy) generalisation
-  of switch statements. Or make choices by comparing against *only* numbers or symbols
-  &#x2014;e.g., not strings!&#x2013; with less clutter by using `case`.
-
 <div class="parallel">
     (cond
       (test₀
@@ -442,41 +461,31 @@ Avoid nested if-then-else clauses by using a `cond` statement &#x2013;a (lazy) g
 
 \columnbreak
 
-    (case 'boberto
-      ('bob 3)
-      ('rob 9)
-      ('bobert 9001)
-      (otherwise "You're a stranger!"))
+    ;; pattern matching on any type
+    (defun go (x)
+      (pcase x
+        ('bob 1972)
+        (`(,a ,_ ,c) (+ a c))
+        (otherwise "Shucks!")))
+    
+    (go 'bob)     ;; ⇒ 1972
+    (go '(1 2 3)) ;; ⇒ 4
+    (go 'hallo)   ;; "Shucks!"
 
 </div>
 
-`cond` sequentially evaluates the predicates `testᵢ` and performs only the action of the
-first true test; yielding `nil` when no tests are true.
+Avoid nested if-then-else clauses by using a `cond` statement &#x2013;a (lazy) generalisation
+of switch statements: It sequentially evaluates the expressions `testᵢ` and
+performs only the action of the first true test; yielding `nil` when no tests are true.
+Or use [pattern matching](http://www.wilfred.me.uk/blog/2017/03/19/pattern-matching-in-emacs-lisp/); which even allows predicates in the case position ---`C-h o` ;-)
 
 \room
 Hint: If you write a predicate, think of what else you can return besides `t`; such as
 a witness to why you're returning truth &#x2013;all non-nil values denote true after all.
 E.g., `(member e xs)` returns the sublist of `xs` that begins with `e`.
 
-\vfill
 
-
-<a id="org80f9253"></a>
-
-# Exception Handling
-
-We can attempt a dangerous clause and catch a possible exceptional case
-&#x2013;below we do not do so via `nil`&#x2013; for which we have an associated handler.
-
-    (condition-case nil attemptClause (error recoveryBody))
-    
-      (ignore-errors attemptBody) 
-    ≈ (condition-case nil (progn attemptBody) (error nil))
-    
-    (ignore-errors (+ 1 "nope")) ;; ⇒ nil
-
-
-<a id="orgefe67c2"></a>
+<a id="org455b24d"></a>
 
 # Loops
 
@@ -522,8 +531,6 @@ Let's sum the first `100` numbers in 3 ways.
 
 </div>
 
-Two instances of a while loop:
-
     ;; Repeat body n times, where i is current iteration.
     (let ((result 0) (n 100))
       (dotimes (i (1+ n) result) (incf result i)))
@@ -535,7 +542,18 @@ Two instances of a while loop:
 In both loops, `result` is optional and defaults to nil.
 It is the return value of the loop expression.
 
-**Example of Above Constructs**
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">**Example of Above Constructs**</td>
+</tr>
+</tbody>
+</table>
 
     (defun my/cool-function (N D)
       "Sum the numbers 0..N that are not divisible by D"
@@ -546,14 +564,9 @@ It is the return value of the loop expression.
             (while 'true
               (catch 'continue
                 (incf counter)
-                (cond
-                  ((equal counter N)               
-                      (throw 'break sum))
-                  ((zerop (% counter D))           
-                      (throw 'continue nil))
-                  ('otherwise
-    	          (incf sum counter))
-                  )))))))
+                (cond ((equal counter N)       (throw 'break sum   ))
+                       ((zerop (% counter D))  (throw 'continue nil))
+                       ('otherwise             (incf sum counter   )) )))))))
     
     (my/cool-function  100 3)  ;; ⇒ 3267
     (my/cool-function  100 5)  ;; ⇒ 4000
@@ -565,14 +578,29 @@ and Java do-while loops. I personally prefer functional programming, so wont
 look into this much.
 
 
-<a id="org0a847e8"></a>
+<a id="orgfb6adff"></a>
+
+# Exception Handling
+
+We can attempt a dangerous clause and catch a possible exceptional case
+&#x2013;below we do not do so via `nil`&#x2013; for which we have an associated handler.
+
+    (condition-case nil attemptClause (error recoveryBody))
+    
+      (ignore-errors attemptBody) 
+    ≈ (condition-case nil (progn attemptBody) (error nil))
+    
+    (ignore-errors (+ 1 "nope")) ;; ⇒ nil
+
+
+<a id="orgccb05e3"></a>
 
 # Types & Overloading
 
 Since Lisp is dynamically typed, a variable can have any kind of data, possibly
 different kinds if data at different times in running a program.
 We can use `type-of` to get the type of a given value; suffixing that with `p`
-gives the associated predicate; e.g., `function ↦ functionp`.
+gives the associated predicate; \newline e.g., `function ↦ functionp`.
 
     ;; Difficult to maintain as more types are added.
     (defun sad-add (a b)
@@ -607,10 +635,15 @@ remember. The following generic functions work on lists, arrays, and strings:
 -   `sum`, add all numbers; crash for strings.
 -   `length, subseq, sort`.
 
+[dash](https://github.com/magnars/dash.el) is a modern list library for Emacs that uses Haskell-like names for list operations ;-)
+Likewise, [s](https://github.com/magnars/s.el) is a useful Emacs string manipulation library.
+
+In-fact, we can [write Emacs extensions using Haskell directly](https://github.com/knupfer/haskell-emacs).
+
 \newpage
 
 
-<a id="orga2f9442"></a>
+<a id="orgff22dde"></a>
 
 # Macros
 
@@ -668,7 +701,20 @@ Macros let us add new syntax, like `let1` for single lets:
     the contents of which may be inserted in place, not as a list, using the
     [ `,@` splice comma](https://www.gnu.org/software/emacs/manual/html_node/elisp/Backquote.html)  &#x2013;we need to ensure there's a `progn`.
     
-    `` `(pre ,@(list s₀ ⋯ sₙ) post) ≈ `(pre s₀ ⋯ sₙ post) ``.
+    Use list elements in-place:
+    
+    <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+    
+    
+    <colgroup>
+    <col  class="org-left" />
+    </colgroup>
+    <tbody>
+    <tr>
+    <td class="org-left">`` `(pre ,@(list s₀ ⋯ sₙ) post) ≈ `(pre s₀ ⋯ sₙ post) ``</td>
+    </tr>
+    </tbody>
+    </table>
 
 -   `macroexpand` takes *code* and expands any macros in it. It's useful in debugging macros.
     The above ‘equations’ can be checked by running `macroexpand`; \newline e.g.,
@@ -720,7 +766,7 @@ Macros let us add new syntax, like `let1` for single lets:
 \vfill
 
 
-<a id="org9184651"></a>
+<a id="org624f722"></a>
 
 # `read` and `print`
 
@@ -745,7 +791,7 @@ lets us read a lisp object from a string instead of directly from the console.
 Lisp makes writing a REPL astonishingly easy: “Loop as follows:
 Print the result of evaluating what is read at the prompt.”
 
-    (loop (print (eval (read))))  ;; Beautiful (•̀ᴗ•́)و
+    (loop (print (eval (read))))  ;; Beautiful ♥‿♥
 
 -   `loop` merely loops forever.
 
