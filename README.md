@@ -6,7 +6,7 @@ Quick reference to the core language of Emacs &#x2014;Editor MACroS.
 <https://alhassy.github.io> )
 
 **The listing sheet, as PDF, can be found
-[here](<https://github.com/alhassy/ElispCheatSheet/blob/master/CheatSheet.pdf>)**, 
+[here](<CheatSheet.pdf>)**, 
 while below is an unruly html rendition.
 
 This reference sheet is built around the system
