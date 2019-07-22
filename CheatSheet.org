@@ -1,8 +1,18 @@
 # f7 preview changes
 # (local-set-key (kbd "<f7>") (lambda () (interactive) (async-shell-command (concat "open " (org-latex-export-to-pdf)))))
 
-# f8 commit each change
-# f9 push changes
+:Not_ideal:
+#+BEGIN_SRC emacs-lisp
+(setq org-latex-listings 'minted
+      org-latex-packages-alist '(("" "minted"))
+      org-latex-pdf-process
+      '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+        "biber %b"
+        "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+        "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f")
+)
+#+END_SRC
+:End:
 
 * Header                                                     :ignore:
 #+TITLE: Elisp Reference Sheet
@@ -26,7 +36,7 @@
 #+LATEX_HEADER: \usepackage{/Users/musa/MyUnicodeSymbols/MyUnicodeSymbols}
 
 #+NAME: parallel enviro
-#+BEGIN_EXPORT latex 
+#+BEGIN_EXPORT latex
 % \setlength{\columnseprule}{2pt}
 
 \renewenvironment{parallel}[1][2] % one argument, whose default value is literal `2`.
@@ -66,6 +76,7 @@
 
 * Functions
 
+#+latex: {\color{white}.}\vspace{-1em}
 + Function invocation: ~(f x₀ x₁ … xₙ)~. E.g., ~(+ 3 4)~ or ~(message "hello")~.
   - After the closing parens invoke ~C-x C-e~ to execute them.
   - /Warning!/ Arguments are evaluated *before* the function is executed.
@@ -75,19 +86,18 @@
     # from being parsed correctly. Lisp does not make use of infix names,
     # so this is a non-issue. Interestingly Agda allows +-* in names and infix!
 
-    E.g., ~(1+ 42) → 43~ using function /named/ ~1+~ --the ‘successor function’.
+    E.g., ~(1+ 42) → 43~ using function /named/ ~1+~ ---the ‘successor function’.
 
 + Function definition:
   #+BEGIN_SRC elisp
   ;; “de”fine “fun”ctions
-  (defun my-fun (arg₀ arg₁ … argₖ)        ;; header, signature
+  (defun my-fun (arg₀ arg₁ … argₖ)         ;; header, signature
     "This functions performs task …"       ;; documentation, optional
-    …sequence of instructions to perform…  ;; body
-  )
+    …sequence of instructions to perform… ) ;; body
   #+END_SRC
 
-  - The return value of the function is the result of the last expression executed. 
-  - The documentation string may indicate the return type, among other things.  
+  - The return value of the function is the result of the last expression executed.
+  - The documentation string may indicate the return type, among other things.
 
 + Anonymous functions: ~(lambda (arg₀ … argₖ) bodyHere)~.
   #
@@ -95,20 +105,23 @@
 #+BEGIN_SRC elisp
 ;; make then way later invoke
 (setq my-f (lambda (x y) (+ x y)))
-(funcall my-f 1 2)
-;; (my-func 1 2) ;; invalid!
+(funcall my-f 1 2) ;; ⇒ 3
+;; (my-f 1 2) ;; invalid!
+(funcall my-f 1 2) ;; ⇒ 3
 #+END_SRC
 \columnbreak
     #+BEGIN_SRC elisp
 ;; make and immediately invoke
 (funcall (lambda (x y) (+ x y)) 1 2)
+
  ;; works, but is deprecated
 ((lambda (x y) (+ x y)) 1 2)
 #+END_SRC
 #+end_parallel
-  
-  The last one is invalid since ~(f x0 … xk)~ is only meaningful for functions
-  ~f~ formed using ~defun~. More honestly, Elisp has distinct namespaces for functions and variables.
+
+    #+latex: \vspace{-1em}
+  # The last one is invalid since ~(f x0 … xk)~ is only meaningful for functions   ~f~ formed using ~defun~.
+  # More honestly, Elisp has distinct namespaces for functions and variables.
 
 :Deprecated_form:
 ;; make and immediately invoke
@@ -119,7 +132,7 @@ https://www.gnu.org/software/emacs/manual/html_node/elisp/Function-Indirection.h
 :End:
 
 :To_investigate_further:
-\room
+#+latex: \room
   Indeed, ~(defun f (x₀ … xₖ) body) ≈ (fset 'f (lambda (x₀ … xₖ) body))~.
   - Using ~fset~, with quoted name, does not require using ~funcall~.
 
@@ -127,13 +140,21 @@ https://www.gnu.org/software/emacs/manual/html_node/elisp/Function-Indirection.h
    (defalias (quote f) (function (lambda (xs) body)))
 :End:
 
-\room
-Functions are first-class values; the function represented by the name /f/ is obtained
-  by the call ~#'f~.
+#+latex: \room
+Functions are first-class values /but/ variables and functions have *separate namespaces*
+---“Elisp is a Lisp-2 Language”.
+The function represented by the name /g/ is obtained
+  by the call ~(function g)~, which is also denoted ~#'g~.
+  The sharp quote behaves like the usual quote but causes its argument to be compiled.
+  ~lambda~ is a macro that calls ~function~ and so there is rarely any need to quote lambdas.
+  If ~h~ is a variable referring to a function, then ~(funcall h x₀ … xₙ)~
+  calls that function on arguments ~xᵢ~.
+  #+latex: \vspace{-0.4em}
+  | ~(apply 'g x₀…xₖ '(xₖ…xₙ)) ≈ (funcall #'g x₀…xₙ) ≈ (g x₀…xₙ)~ |
 
   # “lambda” is actually a macro!
   # (macroexpand '(lambda (x) x))
-  
+
   :Try_it_out:
 #+BEGIN_SRC emacs-lisp
 (defun f (x) x) ;; identify function
@@ -145,20 +166,30 @@ Functions are first-class values; the function represented by the name /f/ is ob
 #+END_SRC
 :End:
 
-#+latex: \vspace{-1em}
+#+latex: {\color{white}.}\vspace{-2.4em}
 #+BEGIN_SRC emacs-lisp
-;; Recursion with the ‘tri’angle numbers: tri n = sum [0..n].
+;; Recursion with the ‘tri’angle numbers: tri n = Σⁿᵢ₌₀ i.
 (defun tri (f n) (if (<= n 0) 0 (+ (funcall f n) (tri f (- n 1)))))
 (tri #'identity 100)           ;; ⇒ 5050
 (tri (lambda (x) (/ x 2)) 100) ;; ⇒ 2500
+
+;; Run “C-h o tri” to see TWO items! Location determines dispatch.
+(setq tri 100) (tri #'identity tri)      ;; ⇒ 5050
+(setq tri (lambda (x) x)) (tri tri 100)  ;; ⇒ 5050
 #+END_SRC
 
-IO: In general ~interactive~ may take no arguments.
-It lets us use ~M-x~ to execute functions;
-here, this results in ~n~ being queried to the user.
+# ✓
+  #+latex: \vspace{-0.1em}
++ → :: Use ~funcall~ or ~apply~ to call functions bound to variables.
++ → :: Refer to functions outside of function calls by using a sharp quote, ~#'~.
+:Generally:
 #+BEGIN_SRC emacs-lisp
-(defun double (n) (interactive "n") (message-box (format "%s" (* n 2))))
+;; Generally:
+  (f)           ;; calls global function f
+  (funcall f)   ;; calls function bound to f
+  (funcall #'f) ;; calls global function f
 #+END_SRC
+:End:
 
 :Old:
 + Recursion:
@@ -200,6 +231,47 @@ Un-supplied optional arguments are bound to ~nil~.
 
 Keywords begin with a colon, ~:k~ is a constant whose value is ~:k~.
 
+** TODO COMMENT more #' notes
+
+    Three ways to define anonymous functions: ~function, lambda, #'~.
+
+ 0. Plain quote, ~'~, tells the compiler to leave its argument as an expression, no further compilation is possible.
+
+ 1. ~function~ behaves like ~quote~ but tells the compiler its argument is intended to be
+    used as a function and should be compiled as such or converted into a closure.
+
+ 2. ~lambda~ uses ~function~ as a subroutine to tell the compiler its argument is a function.
+
+ 3. Thus, lambdas are self-quoting: Evaluating a form whose ~car~ is a ~lambda~ yields
+    the form itself. ( It yields a closure under lexical binding. )
+
+ 4. The /sharp quote/ ~#'~ is short-hand for ~function~.
+
+ #+begin_src emacs-lisp
+  (lambda (x) x)
+≈ #'(lambda (x) x)
+≈ (function (lambda (x) x))
+
+(macroexpand '#'(lambda (x) x) ;; ⇒ (function (lambda (x) x))
+(macroexpand ''(lambda (x) x))  ;; ⇒ (function (lambda (x) x))
+
+''(lambda (x) x) ;; A list of items: Literal lambda, List (x), Literal x
+;; TODO: MA: New adventure: When do we want to use quote-quote ?
+
+(funcall ''(lambda (x) (+ x 2)) 3)
+
+;; Whence there is never any need to quote lambdas with either quote.
+ #+end_src
+
+* TODO COMMENT interactive
+
+  IO: In general ~interactive~ may take no arguments.
+It lets us use ~M-x~ to execute functions;
+here, this results in ~n~ being queried to the user.
+#+BEGIN_SRC emacs-lisp
+(defun double (n) (interactive "n") (message-box (format "%s" (* n 2))))
+#+END_SRC
+
 * Quotes, Quasi-Quotes, and Unquotes
 
 Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
@@ -218,7 +290,7 @@ Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
 ;; 'this  → this
 ;;  that  → hello
 ;; 'that  → that
-#+END_SRC 
+#+END_SRC
     :End:
   - Note: ~'x ≈ (quote x)~.
 
@@ -232,30 +304,30 @@ Quotes: ~'x~ refers to the /name/ rather than the /value/ of ~x~.
 #+END_SRC
 :End:
 
-  \room
+  #+latex: \room
 Akin to English, quoting a word refers to the word and not what it denotes.
 
 This lets us treat /code/ as /data/! E.g., ~'(+ 1 2)~ evaluates to ~(+ 1 2)~, a function call,
     not the value ~3~! Another example, ~*~ is code but ~'*~
     is data, and so ~(funcall '* 2 4)~ yields 8.
 
-\room
+#+latex: \room
 
 /Elisp expressions are either atoms or function application --nothing else!/
 
 ‘Atoms’ are the simplest objects in Elisp: They evaluate to themselves; \newline
 e.g., ~5, "a", 2.78, 'hello, [1 "two" three]~.
-    :lambdas_are_not_literals:    
+    :lambdas_are_not_literals:
      lambda's form function literals in that, e.g.,
     ~(lambda (x) x)~ evaluates to itself.
 
     Read here: https://nullprogram.com/blog/2018/02/22/
     :End:
 
-  # Reddit/skeeto: There are lots of types in Emacs Lisp that are "atoms" but not actually atomic: vectors, records, hash tables, etc.   
+  # Reddit/skeeto: There are lots of types in Emacs Lisp that are "atoms" but not actually atomic: vectors, records, hash tables, etc.
 
-  
-\room
+
+#+latex: \room
 
 An English sentence is a list of words; if we want to make a sentence where some of
 the words are parameters, then we use a quasi-quote --it's like a quote, but allows
@@ -263,13 +335,13 @@ us to evaluate data if we prefix it with a comma. It's usually the case that the
 quasi-quoted sentence happens to be a function call! In which case, we use ~eval~
 which executes code that is in data form; i.e., is quoted.
 
-\room
+#+latex: \room
 Macros are essentially functions that return sentences, lists, which may happen to
 contain code.
 
 #+begin_parallel org
 #+BEGIN_SRC emacs-lisp
-;; Quotes / sentences / data 
+;; Quotes / sentences / data
 '(I am a sentence)
 '(+ 1 (+ 1 1))
 
@@ -283,7 +355,7 @@ contain code.
 ;; Quasi-quotes: Sentences with a
 ;; computation, code, in them.
 `(Hello ,name and welcome)
-`(+ 1 ,(+ 1 1))  ;; ⇒ '(+ 1 2)          
+`(+ 1 ,(+ 1 1))  ;; ⇒ '(+ 1 2)
 #+END_SRC
 #+end_parallel
 
@@ -296,14 +368,14 @@ A language that uses the same structure to store data and code is called ‘homo
 + [[http://sachachua.com/blog/wp-content/uploads/2013/05/How-to-Learn-Emacs-v2-Large.png][How to Learn Emacs: A Hand-drawn One-pager for Beginners / A visual tutorial]]
 + [[https://emacs-doctor.com/learn-emacs-lisp-in-15-minutes.html][Learn Emacs Lisp in 15 minutes]] --- https://learnxinyminutes.com/
 + [[https://www.gnu.org/software/emacs/manual/html_node/eintr/index.html#Top][An Introduction to Programming in Emacs Lisp]] @@latex: \hfill  ---also @@ [[http://landoflisp.com/][Land of Lisp]]
-+ [[https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top][GNU Emacs Lisp Reference Manual]] 
-  
++ [[https://www.gnu.org/software/emacs/manual/html_node/elisp/index.html#Top][GNU Emacs Lisp Reference Manual]]
+
 * Variables
 # (describe-symbol 'make-variable-buffer-local)
 
 + Global Variables, Create & Update: ~(setq name value)~.
   - Generally: ~(setq name₀ value₀ ⋯ nameₖ valueₖ)~.
-  
+
   Use ~devfar~ for global variables since it
   permits a documentation string --but updates must be performed with ~setq~.
   E.g., ~(defvar my-x 14 "my cool thing")~.
@@ -326,7 +398,7 @@ my-x ;; ⇒ now 16
   :End:
 
   | ~(setq x y) ≈ (set (quote x) y)~ |
-  
+
   Variables are assigned with ~set~,
   which takes a quoted identifier, so that it's not evaluated,
   and a value to associate to that variable. “set quoted”, ~setq~,
@@ -342,7 +414,7 @@ my-x ;; ⇒ now 16
   - let ≈ parallel; let* ≈ sequential.
   - Local functions declared with ~flet~ and ~flet*~; e.g.,
     ~(flet ((go (x) (+ 2 x))) (go 3))~.
-    
+
 + Any sequence of symbols is a valid identifier, including ~x, x-y/z, --<<==>>--~
   and even ~∀∃~. Elisp names are case sensitive.
   :Try_it_out:
@@ -353,17 +425,17 @@ my-x ;; ⇒ now 16
 (setq --<<==>>-- 23)
 (message (format "%s" --<<==>>--))
 
-(eq '∀∃ '--<<==>>--) ;; false 
+(eq '∀∃ '--<<==>>--) ;; false
 (eq '∀∃ '∀∃)         ;; true
 
-;; Elisp names are case sensitive 
+;; Elisp names are case sensitive
 (eq 'foobar 'fOoBaR) ;; ⇒ false
 #+END_SRC
 :End:
-  
+
 + Elisp is dynamically scoped: The caller's stack is accessible by default!
   #+BEGIN_SRC emacs-lisp
-(defun woah () 
+(defun woah ()
   "If any caller has a local ‘work’, they're in for a nasty bug
    from me! Moreover, they better have ‘a’ defined in scope!"
   (setq work (* a 111))) ;; Benefit: Variable-based scoped configuration.
@@ -384,9 +456,9 @@ https://www.gnu.org/software/emacs/manual/html_node/elisp/Lexical-Binding.html
 :End:
 
 * spacing COMMENT newpage                                                    :ignore:
-\newpage
+#+latex: \newpage
 * spacing COMMENT newpage                                                    :ignore:
-\newpage
+#+latex: \newpage
 * Lists and List-Like Structures
 
 + Produce a syntactic, un-evaluated list, we use the single quote:
@@ -407,8 +479,8 @@ https://www.gnu.org/software/emacs/manual/html_node/elisp/Lexical-Binding.html
 
 E.g., ~(cons 1 (cons "a" (cons 'nice nil))) ≈ (list 1 "a" 'nice) ≈ '(1 "a" nice)~.
 
-\room
-Since variables refer to literals and functions have lambdas as literals, we 
+#+latex: \room
+Since variables refer to literals and functions have lambdas as literals, we
 can produce forms that take functions as arguments. E.g., the standard ~mapcar~
 may be construed:
 #+BEGIN_SRC emacs-lisp
@@ -427,7 +499,7 @@ Pairs: ~(x . y) ≈ (cons x y)~.
   The ~assoc~ function takes a key and an alist and returns the first pair
   having that key. In the end, alists are just lists.
 
-  :Try_it_out:  
+  :Try_it_out:
 #+BEGIN_SRC emacs-lisp
 (setq drinks '( (jasim . coffee) (mary . tea) (jasim . chai) ))
 
@@ -439,12 +511,12 @@ Pairs: ~(x . y) ≈ (cons x y)~.
 #+END_SRC
 :End:
 
-\room  
+#+latex: \room
 (Rose) Trees in lisp are easily formed as lists of lists where each inner
    list is of length 2:
    The first symbol is the parent node and the second is the list of children.
 
-\room   
+#+latex: \room
 Lists are formed by chains of cons cells, so getting and setting are very slow;
 likewise for alists. If performance is desired, one uses arrays and hash tables,
 respectively, instead. In particular, the performance of arrays and hash tables always
@@ -455,7 +527,7 @@ However, the size of an array is fixed ---it cannot change and thus grow--- and 
 tables have a lookup cost as well as issues with "hash collisions". Their use is worth
 it for large amounts of data, otherwise lists are the way to go.
 
-\room
+#+latex: \room
 An [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Arrays.html][array]] is created like a list but using [only square brackets] with getter ~(aref arr index)~.
 
 A hash table is created with ~(make-hash-table)~ with getter ~(gethash key table)~.
@@ -473,13 +545,13 @@ A hash table is created with ~(make-hash-table)~ with getter ~(gethash key table
 #+END_SRC
 :End:
 
-\room
+#+latex: \room
 What if you look up a key and get ~nil~, is there no value for that key or is the value
 ~nil~? ~gethash~ takes a final, optional, argument which is the value to return when the
 key is not found; it is ~nil~ by default.
 
 * Generic Setters
-  
+
 Since everything is a list in lisp, if ~G~ is a way to get a value from variable ~x~, then ~(setf G e)~ updates ~x~ so that the location ~G~ now refers to element ~e~.
 Hence, once you have a getter ~G~ you freely obtain a setter ~(setf G ⋯)~.
 # G may be arbitrary complex.
@@ -497,9 +569,9 @@ Hence, once you have a getter ~G~ you freely obtain a setter ~(setf G ⋯)~.
 ;; “#2” means repeat from index 2.
 (nth 99 y) ;; ⇒ a
 #+END_SRC
-  
+
 * spacing newpage                                                    :ignore:
-\newpage
+#+latex: \newpage
 * Records
 
 If we want to keep a list of related properties in a list, then we have to remember
@@ -512,10 +584,10 @@ Printing and reading symmetry works as expected with structures and updates happ
 :End:
 
 #+BEGIN_SRC elisp
-(defstruct X "Record with fields/slots fᵢ having defaults dᵢ" 
+(defstruct X "Record with fields/slots fᵢ having defaults dᵢ"
   (f₀ d₀) ⋯ (fₖ dₖ))
 
-;; Automatic constructor is “make-X” with keyword parameters for 
+;; Automatic constructor is “make-X” with keyword parameters for
 ;; initialising any subset of the fields!
 ;; Hence (expt 2 (1+ k)) kinds of possible constructor combinations!
 (make-X :f₀ val₀ :f₁ val₁ ⋯ :fₖ valₖ) ;; Any, or all, fᵢ may be omitted
@@ -562,17 +634,17 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
   - Perform multiple statements but stop when any of them fails, returns ~nil~: ~(and s₀ s₁ … sₖ)~.
     * Maybe monad!
   - Perform multiple statements until one of them succeeds, returns non-~nil~: ~(or s₀ s₁ … sₖ)~.
-  
+
   We can coerce a statement ~sᵢ~ to returning non-~nil~ as so: (~progn sᵢ t)~.
   Likewise, coerce failure by ~(progn sᵢ nil)~.
-  
+
 :TryItOut:
 #+BEGIN_SRC emacs-lisp
-(and 
+(and
   (message "hello")
   (progn (sleep-for 0 500) t)
   (message "world")
-  (progn (sleep-for 0 500) t)  
+  (progn (sleep-for 0 500) t)
   nil
   (message "bye")
 )
@@ -581,7 +653,7 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
   (message "hello")
   (progn (sleep-for 0 500) t)
   (message "world")
-  (progn (sleep-for 0 500) t)  
+  (progn (sleep-for 0 500) t)
   nil
   (message "bye")
 )
@@ -590,11 +662,11 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
   (cond (message "hello")
     (progn (sleep-for 0 500) t)
     (message "world")
-    (progn (sleep-for 0 500) t)  
+    (progn (sleep-for 0 500) t)
     nil
     (throw 'failure 99)
-    (message "bye")  
-  ) 
+    (message "bye")
+  )
 )
 #+END_SRC
 
@@ -624,19 +696,19 @@ Herein, a ‘block’ is a number of sequential expressions which needn't be wra
 * Conditionals
 
 + Booleans: ~nil~, the empty list ~()~, is considered /false/, all else
-  is /true/. 
+  is /true/.
   - Note: ~nil ≈ () ≈ '() ≈ 'nil~.
   - (Deep structural) equality: ~(equal x y)~.
   - Comparisons: As expected; e.g., ~(<= x y)~ denotes /x ≤ y/.
 
 + ~(if condition thenExpr optionalElseBlock)~
   - Note: ~(if x y) ≈ (if x y nil)~; \newline better: ~(when c thenBlock) ≈ (if c (progn thenBlock))~.
-  - Note the else-clause is a ‘block’: Everything after the then-clause is considered to be part of it.  
+  - Note the else-clause is a ‘block’: Everything after the then-clause is considered to be part of it.
   - ~(if xs ⋯)~ means “if xs is nonempty then ⋯” is akin to C style idioms on
     linked lists.
-    
+
 #
-#+begin_parallel org  
+#+begin_parallel org
 #+BEGIN_SRC emacs-lisp
 (cond
   (test₀
@@ -666,8 +738,8 @@ Avoid nested if-then-else clauses by using a ~cond~ statement --a (lazy) general
 of switch statements: It sequentially evaluates the expressions ~testᵢ~ and
 performs only the action of the first true test; yielding ~nil~ when no tests are true.
 Or use [[http://www.wilfred.me.uk/blog/2017/03/19/pattern-matching-in-emacs-lisp/][pattern matching]]; which even allows predicates in the case position ---~C-h o~ ;-)
-   
-:Try_it_out:   
+
+:Try_it_out:
 #+BEGIN_SRC emacs-lisp
 (cond
   (t (message "first"))
@@ -676,7 +748,7 @@ Or use [[http://www.wilfred.me.uk/blog/2017/03/19/pattern-matching-in-emacs-lisp
 #+END_SRC
 :End:
 
-\room
+#+latex: \room
 Hint: If you write a predicate, think of what else you can return besides ~t~; such as
 a witness to why you're returning truth --all non-nil values denote true after all.
 E.g., ~(member e xs)~ returns the sublist of ~xs~ that begins with ~e~.
@@ -738,12 +810,12 @@ It is the return value of the loop expression.
     (when (< N 0) (throw 'return 0)) ;; early exit
     (let ((counter 0) (sum 0))
       (catch 'break
-        (while 'true
-          (catch 'continue
-            (incf counter)
-            (cond ((equal counter N)       (throw 'break sum   ))
-                   ((zerop (% counter D))  (throw 'continue nil))
-                   ('otherwise             (incf sum counter   )) )))))))
+    (while 'true
+      (catch 'continue
+        (incf counter)
+        (cond ((equal counter N)       (throw 'break sum   ))
+           ((zerop (% counter D))  (throw 'continue nil))
+           ('otherwise             (incf sum counter   )) )))))))
 
 (my/cool-function  100 3)  ;; ⇒ 3267
 (my/cool-function  100 5)  ;; ⇒ 4000
@@ -763,7 +835,7 @@ We can attempt a dangerous clause and catch a possible exceptional case
 #+BEGIN_SRC elisp
 (condition-case nil attemptClause (error recoveryBody))
 
-  (ignore-errors attemptBody) 
+  (ignore-errors attemptBody)
 ≈ (condition-case nil (progn attemptBody) (error nil))
 
 (ignore-errors (+ 1 "nope")) ;; ⇒ nil
@@ -804,20 +876,20 @@ types, hence the types of each declaration need to differ in at least one argume
 #+BEGIN_SRC emacs-lisp
 ;; Difficult to maintain as more types are added.
 (defun sad-add (a b)
-  (if (and (numberp a) (numberp b))    
+  (if (and (numberp a) (numberp b))
       (+ a b)
-      (format "%s + %s" a b))  
+      (format "%s + %s" a b))
 )
 
-(sad-add 2 3)       ;; ⇒ 5 
+(sad-add 2 3)       ;; ⇒ 5
 (sad-add 'nice "3") ;; ⇒ "nice + 3"
 
 ;; Better: Seperation of concerns.
 ;;
-(cl-defmethod add ((a number) (b number)) (+ a b))      ;; number types 
+(cl-defmethod add ((a number) (b number)) (+ a b))      ;; number types
 (cl-defmethod add ((a t) (b t)) (format "%s + %s" a b)) ;; catchall types
 
-(add 2 3)       ;; ⇒ 5 
+(add 2 3)       ;; ⇒ 5
 (add 'nice "3") ;; ⇒ "nice + 3"
 #+END_SRC
 
@@ -848,7 +920,7 @@ Likewise, [[https://github.com/magnars/s.el][s]] is a useful Emacs string manipu
 In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensions using Haskell directly]].
 
 * spacing  newpage                                          :ignore:
-\newpage
+#+latex: \newpage
 * Macros
 
   Macros let us add new syntax, like ~let1~ for single lets:
@@ -872,9 +944,9 @@ In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensio
    '(let1 x "5" (message x)))
  ;; ⇒ (let ((x 5)) (message x))
  #+END_SRC
-   \columnbreak   
+   \columnbreak
      #+BEGIN_SRC emacs-lisp
- ;; No progn; (first x y z) ≈ x    
+ ;; No progn; (first x y z) ≈ x
  (defmacro first (&rest body)
   (car `,@body))
 
@@ -892,20 +964,20 @@ In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensio
   :Try_it_out:
   #+BEGIN_SRC emacs-lisp
   (first (insert "x") (insert "y") (message "z"))
-    
+
   (not-first (insert "x") (insert "y") (message "z"))
 #+END_SRC
   :End:
 
   #+end_parallel
-  
+
   0. Certain problems are elegantly solved specific language constructs;
      e.g., list operations are generally best defined by pattern matching.
      # Likewise for any ADT.
 
   1. Macros let us /make/ the best way to solve a problem when our language does
      not give it to us.
-     
+
      # --They can also be used to reduce repetitive visual noise.
      # Which is achievable by using higher-order operations.
      #
@@ -931,7 +1003,7 @@ In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensio
        #             ≈ '(pre s0 ⋯ sn post)
        #
        # Woah!
-  
+
 + ~macroexpand~ takes /code/ and expands any macros in it. It's useful in debugging macros.
   The above ‘equations’ can be checked by running ~macroexpand~; \newline e.g.,
   ~(when c s₀ ⋯ sₙ) ≈ (if c (progn s₀ ⋯ sₙ) nil)~ holds since:
@@ -939,33 +1011,33 @@ In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensio
    #+BEGIN_SRC elisp
 (macroexpand '(when c s₀ ⋯ sₙ)) ;; ⇒ (if c (progn s₀ ⋯ sₙ))
 #+END_SRC
-    
+
 + If ~var~ is an argument to a macro where ~,var~ occurs multiple times, then since
   arguments to macros are raw source code, each occurrence of ~,var~ is an execution of the
   code referenced by ~var~.
 
-  \room
+  #+latex: \room
   Avoid such repeated execution by using a ~let~ to capture the result, call it ~res~, once
   and use the ~res~ in each use site.
 
-  \room
+  #+latex: \room
   Now we've made use of the name ~res~ and our users cannot use that name correctly.
   Avoid such /unintended/ capture by using ~gensym~ to provide us with a globally unique
   name which is bound to a variable, say ~r~, then we bind the result of executing ~var~
   to the fresh name ~,r~.
 
-  \room  
+  #+latex: \room
   Whence: ~`(⋯,var⋯,var⋯)~
     @@latex:\newline{\color{white}.}\hspace{2em}@@
     ~⇒ (let ((r (gensym))) `(let ((,r ,var)) ⋯,r⋯,r⋯))~.
 
-  \room  
+  #+latex: \room
   Note that the name ~r~ is outside the backquote; it is part of code that is run
   at macro expansion time, not runtime. The value of the final ~let~ is then the backquoted
   matter, which makes /no/ reference to ~r~, but instead makes use of the name it
   refers to, ~,r~. Neato!
 
-  \room
+  #+latex: \room
   Ex., remove repeated execution from ~(defmacro twice (var) `(list ,var ,var))~.
   :Try_it_out:
   #+BEGIN_SRC emacs-lisp
@@ -996,12 +1068,13 @@ In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensio
 + Macros that /intentionally/ use variable capture as a feature, rather than a bug,
   to provide names available in the macro body are called ‘anaphoric macros’.
 
-  \room  
+  #+latex: \room
   E.g., ~(split list no yes)~ provides the names ~head, tail~ in the ~yes~ body
   to refer to the head and tail of the given ~list~, say via a ~let~, but not so in the
   ~no~ argument for when ~list~ is empty. Whence, elegant pattern matching on lists.
 
-  \room Exercise: Define ~split~.
+  #+latex: \room
+  Exercise: Define ~split~.
   :Try_it_out:
 #+BEGIN_SRC emacs-lisp
 (defmacro split (list no &rest yes)
@@ -1022,7 +1095,7 @@ In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensio
 + /Macros/ let us manipulate a program's abstract syntax tree, usually
   by delaying some computations --easy since Elisp lets us treat code as data.
 
-\room
+#+latex: \room
 ~`(e₀ e₁ ⋯ eₖ)~ is known as a /quasi-quote/: It produces syntactic data like ~quote~
   but allows computations to occur --any expression prefixed with a comma as in ~,e₃~--
   thereby eagerly evaluating some and delaying evaluation of others.
@@ -1047,7 +1120,7 @@ In-fact, we can [[https://github.com/knupfer/haskell-emacs][write Emacs extensio
 
 We've added new syntax to Elisp!
 
-\room
+#+latex: \room
 The above ‘equations’ can be checked by running ~macroexpand~; \newline e.g.,
 ~(when c s₀ ⋯ sₙ) ≈ (if c (progn s₀ ⋯ sₙ) nil)~ holds since
 
@@ -1058,16 +1131,16 @@ The above ‘equations’ can be checked by running ~macroexpand~; \newline e.g.
 Woah!
 
 * spacing COMMENT newpage                                                    :ignore:
-\newpage
+#+latex: \newpage
 * COMMENT Hooks
 + We can ‘hook’ methods to run at particular events.
 + Hooks are lists of functions that are, for example, run when a mode is initialised.
 
-# Hooks are lists of functions that are called from Emacs Lisp in order to modify the behaviour of something. 
+# Hooks are lists of functions that are called from Emacs Lisp in order to modify the behaviour of something.
 # For example, different modes have their own hooks so that you can add functions that will run when that mode is initialised.
 
 E.g.,
-let's add the ~go~ function to the list of functions when a buffer 
+let's add the ~go~ function to the list of functions when a buffer
 is initialised with org-mode.
 #+BEGIN_SRC elisp
 (describe-symbol 'org-mode-hook)
@@ -1094,8 +1167,8 @@ is initialised with org-mode.
 E.g., this is a way to load a lisp file. ‘Printing’ a lisp object mean producing
 a textual representation. These operations, in lisp, are mostly inverse.
 
-\room
-The ~read-from-string~ command works just like the ~read~ command, but 
+#+latex: \room
+The ~read-from-string~ command works just like the ~read~ command, but
 lets us read a lisp object from a string instead of directly from the console.
 
 #+BEGIN_SRC emacs-lisp
@@ -1109,7 +1182,7 @@ lets us read a lisp object from a string instead of directly from the console.
 
 ;; Run (sum-two) with inputs (+ 1 2) and (* 3 4)  ;-)
 #+END_SRC
-  
+
 Lisp makes writing a REPL astonishingly easy: “Loop as follows:
 Print the result of evaluating what is read at the prompt.”
 #+BEGIN_SRC emacs-lisp
@@ -1122,7 +1195,7 @@ Print the result of evaluating what is read at the prompt.”
    structures. Hence, we must use quotes if we want to read a string rather than a
    symbol, for example.
 
-\room   
+#+latex: \room
 A major problem with this REPL is that ~eval~ executes any, potentially malicious,
 Lisp command entered by the user. Ideally one checks the read lisp object is
 safe ---say, it is one of some allowable commands--- and only then evaluates it.
@@ -1139,15 +1212,15 @@ safe ---say, it is one of some allowable commands--- and only then evaluates it.
   (let ((sexp (read)))
     (when (equal sexp 'quit) (throw 'quit "byebye"))
     (if (member (car sexp) safe-commands)
-        (eval sexp)
-	'(I do not know that command)))))
+    (eval sexp)
+    '(I do not know that command)))))
 #+END_SRC
 :End:
- 
-* TODO COMMENT Format --land of lisp 
-  
+
+* TODO COMMENT Format --land of lisp
+
 Format :: 223 discuss a and s, ~& for printing a new line if need be whence no ugly empty lines, 228 for ~t, 231 for printings lists. Format is a dsl, there's so much!
-  
+
 * COMMENT Making README.md
 
 C-c C-c: Evaluate src block.
@@ -1155,26 +1228,28 @@ C-c C-c: Evaluate src block.
 #+NAME: make-readme
 #+BEGIN_SRC elisp :results none
 (with-temp-buffer
-    (insert 
+    (insert
     "#+EXPORT_FILE_NAME: README.md
-     #+HTML: <h1> ElispCheatSheet </h1>
-     #+OPTIONS: toc:nil d:nil
+     ,#+HTML: <h1> ElispCheatSheet </h1>
+     ,#+OPTIONS: toc:nil d:nil
      # Toc is displayed below at a strategic position.
 
      Quick reference to the core language of Emacs ---Editor MACroS.
-     
-     ( Much Emacs Lisp was utilised in making my blog
-     https://alhassy.github.io )
 
-     *The listing sheet, as PDF, can be found
-     [here]({{{URL}}}/blob/master/CheatSheet.pdf)*, 
+     ◈ [[https://alhassy.github.io/ElispCheatSheet/][Website]] ◈
+
+     ( It's mostly Common Lisp in Elisp syntax, for now; based on reading Land of Lisp. )
+     # ( Much Emacs Lisp was utilised in making my [[blog][https://alhassy.github.io]] )
+
+     ,*The listing sheet, as PDF, can be found
+     [here]({{{URL}}}/blob/master/CheatSheet.pdf)*,
      while below is an unruly html rendition.
- 
-     This reference sheet is built around the system
-     https://github.com/alhassy/CheatSheet.
 
-     #+TOC: headlines 2
-     #+INCLUDE: CheatSheet.org     
+     This reference sheet is built around
+     [[https://github.com/alhassy/CheatSheet][an Org-mode CheatSheet system]].
+
+     ,#+TOC: headlines 2
+     ,#+INCLUDE: CheatSheet.org
     ")
     ;; (set-visited-file-name "ReadIt2.md")
     (org-mode)
@@ -1185,8 +1260,5 @@ C-c C-c: Evaluate src block.
 * COMMENT footer
 
 # Local Variables:
-# eval: (org-babel-tangle)
 # eval: (progn (org-babel-goto-named-src-block "make-readme") (org-babel-execute-src-block) (outline-hide-sublevels 1))
-# eval: (org-babel-load-file "CheatSheet/CheatSheet.org")
-# compile-command: (my-org-latex-export-to-pdf)
 # End:
