@@ -10,7 +10,7 @@
 
 # ─AlBasmala keywords─
 # DRAFT: yes
-#+SOURCEFILE: https://github.com/alhassy/ElispCheatSheet/TypedLisp.org
+#+SOURCEFILE: https://raw.githubusercontent.com/alhassy/ElispCheatSheet/master/TypedLisp.org
 #+IMAGE: ../assets/img/emacs-birthday-present.png
 #+IMAGEHEIGHT: 350
 #+IMAGEWIDTH: 350
